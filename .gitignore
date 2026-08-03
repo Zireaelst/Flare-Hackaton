@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+*.key
+node_modules/
+.next/
+out/
+cache/
+broadcast/
+artifacts/
+.DS_Store

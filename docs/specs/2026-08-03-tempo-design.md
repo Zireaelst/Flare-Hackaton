@@ -117,11 +117,15 @@ deferred execution from a primitive with no deferral?
 **Answer: make the user operation register an order rather than perform an action.**
 
 ```
-1. XRPL user sends ONE Payment to the FAssets Core Vault
-   memo = 0xFF | walletId | executorFeeUBA | abi.encode(PackedUserOperation)
+0. Compose screen POSTs abi.encode(PackedUserOperation) to the relayer and
+   waits for an ack, so the bytes exist before any XRP moves.
+
+1. XRPL user sends ONE untagged Payment to the FAssets Core Vault
+   memo = 0xFE | walletId | executorFeeUBA | keccak256(abi.encode(userOp))   [42 bytes]
 
 2. Relayer sees the payment, fetches an FDC Payment attestation,
-   calls AssetManager.executeDirectMinting(proof)
+   calls AssetManager.executeDirectMintingWithData(proof, data)
+   The controller checks keccak256(data) == the memo commitment.
 
 3. Atomically on Flare:
    - FXRP is minted to the user's PersonalAccount
@@ -148,17 +152,44 @@ deferred execution from a primitive with no deferral?
 
 That last property is the trust story, and it should be said out loud in the submission.
 
-### Why `0xFF` and not `0xFE`
+### Why `0xFE` and not `0xFF`
 
-`0xFE` keeps the memo at a constant 42 bytes but requires delivering the `PackedUserOperation`
-bytes to an executor **out of band** — a second channel, a second failure mode.
+Both opcodes execute the same `PackedUserOperation` and are validated against the same
+`(sender, nonce)` rules. They differ only in how the bytes reach Flare.
 
-Our user operation is two calls (`approve` + `createOrder`) and fits comfortably inside XRPL's
-~1024-byte memo cap. With `0xFF` the payment is fully self-describing: **any** indexer can
-relay it via `executeDirectMinting(proof)`. Fewer moving parts, and a better decentralization
-story — our relayer is not privileged and we publish it.
+| | `0xFE` (hash commitment) | `0xFF` (inline memo) |
+|---|---|---|
+| Memo | Constant 42 bytes | 10-byte header + `abi.encode(userOp)` |
+| Size ceiling | None | **Must stay well under ~900 bytes** |
+| Actors | User + executor (`executeDirectMintingWithData`) | User only; any indexer relays (`executeDirectMinting`) |
+| Call payload on XRPL | Hash only | `target`, `value`, `data` all public |
 
-Fall back to `0xFE` only if a future order type outgrows the memo.
+**We use `0xFE`.** Our user operation is `approve` + `createOrder`, and `OrderParams` carries a
+struct including `bytes xrplAddress`. A rough encoding estimate lands at 700–900 bytes — right
+at the `0xFF` cliff. That is a risk that would surface late, and the cost of avoiding it is
+one HTTP POST from the compose screen to our relayer.
+
+The "don't operate an executor" argument for `0xFF` does not apply to us: we run a relayer
+regardless, for the recovery protocol (§7) and the keeper. `0xFE` is also what the docs
+recommend and what `flare-viem-starter` tooling defaults to.
+
+**Trade-off accepted:** with `0xFE`, a payment whose bytes never reached our relayer is stuck
+until recovered. The compose screen therefore POSTs the bytes and waits for an ack *before*
+showing the user the XRPL payment to sign.
+
+`0xFF` support ("no-relayer mode", where our relayer is provably not privileged) is a roadmap
+item — worth building for the decentralization story, but only after the primary path works.
+
+### Non-negotiable XRPL rule
+
+**The XRPL Payment must carry no destination tag.** A destination tag makes FAssets minting
+credit the tag holder instead of the smart account, which would let an unrelated party
+front-run the user operation. The compose screen must never emit a tagged payment, and the
+relayer must refuse to submit a proof for one.
+
+Both flows also pay the FAssets minting fee **and** the executor fee out of the XRPL Payment
+amount; only the remainder is minted as FXRP. The compose screen computes the required payment
+amount from the intended net mint, not the other way around.
 
 ---
 
@@ -170,7 +201,7 @@ Fall back to `0xFE` only if a future order type outgrows the memo.
  User's wallet
       │
       │ ONE Payment → Core Vault
-      │ memo: 0xFF | ... | abi.encode(userOp)
+      │ memo: 0xFE | ... | keccak256(userOp)  [42B]
       ▼
  ┌──────────┐   watch    ┌─────────────────────┐
  │ Core     │◄───────────│ relayer             │
@@ -273,11 +304,11 @@ The relayer is a stateless worker, driven by cron, with its job state in Supabas
 
 ### Happy path
 
-1. Poll XRPL for payments to the Core Vault whose memo starts with `0xFF`
-2. Decode the memo; sanity-check the `PackedUserOperation` (`sender` matches
+1. Poll XRPL for untagged payments to the Core Vault whose memo starts with `0xFE`
+2. Match the memo commitment to stored userOp bytes; sanity-check it (`sender` matches
    `getPersonalAccount(xrplAddress)`, `nonce == getNonce(personalAccount)`)
 3. Request an FDC `Payment` attestation, wait for finality
-4. Call `executeDirectMinting(proof)` with `msg.value == sum(call.value)` (zero for our calls)
+4. Call `executeDirectMintingWithData(proof, data)` with `msg.value == sum(call.value)` (zero for our calls)
 5. Record the resulting Flare tx against the XRPL tx
 
 ### Recovery paths — the differentiator
@@ -328,7 +359,7 @@ Today is 3 August. Deadline 14 August.
 
 | Day | Date | Goal | Done when |
 |---|---|---|---|
-| 0 | 3 Aug | **Verify the whole stack is live on Coston2** — MasterAccountController, Core Vault, `getVaults()`, FDC verifier, XRPL testnet funding | A hand-built `0xFF` payment mints FXRP to a PersonalAccount |
+| 0 | 3 Aug | **Verify the whole stack is live on Coston2** — MasterAccountController, Core Vault, `getVaults()`, FDC verifier, XRPL testnet funding | A hand-built `0xFE` payment mints FXRP to a PersonalAccount |
 | 1 | 4 Aug | Reproduce a minimal custom instruction end-to-end (`approve` + a counter increment) | `UserOperationExecuted` observed on Coston2 |
 | 2 | 5 Aug | `Tempo.sol` skeleton + `createOrder` via user operation | Order created by one XRPL payment |
 | 3 | 6 Aug | `execute()` + SCHEDULE orders + vault adapter | DCA slice executes; Foundry invariants 1–4 pass |
@@ -392,7 +423,7 @@ triggers all survive unchanged. Decide by **7 August**.
 
 Stated so scope creep has to argue against a written decision: DEX swaps, mainnet, non-XRP
 FAssets, multi-order portfolios, notifications, mobile app, delegated recovery for third-party
-payments, `0xFE` out-of-band delivery, LayerZero cross-chain settlement, any AI feature.
+payments, `0xFF` no-relayer mode, LayerZero cross-chain settlement, any AI feature.
 
 ---
 
