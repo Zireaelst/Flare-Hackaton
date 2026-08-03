@@ -1,3 +1,9 @@
+> **⚠️ SUPERSEDED (2026-08-03) by [`2026-08-03-tempo-design.md`](./2026-08-03-tempo-design.md).**
+> Obscura requires a continuously running TEE stack. No free, card-free, always-on Docker host
+> exists, and the judging window runs a week past submission — so the demo would be dead
+> whenever the developer's laptop was closed. Kept for reference; the analysis remains valid
+> if FCC is revisited with a hosting budget.
+
 # Obscura — Design Spec
 
 **Sealed-bid auction infrastructure for FXRP and XRPL-originated assets, built on Flare Confidential Compute.**
