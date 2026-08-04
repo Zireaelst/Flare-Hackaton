@@ -1,0 +1,76 @@
+import { NextResponse } from "next/server";
+import { createOrder } from "@/lib/relayer/createOrder";
+import { ActionKind, OrderKind, fxrpToUba, usdToWei, ZERO_ADDRESS, type OrderParams } from "@/lib/tempo/orders";
+
+export const maxDuration = 60;
+
+type Body = {
+  kind: "SCHEDULE" | "TAKE_PROFIT" | "STOP_LOSS";
+  action: "VAULT_DEPOSIT" | "REDEEM_TO_XRPL";
+  vault?: string;
+  xrplAddress?: string;
+  amountPerSlice: number;
+  slices: number;
+  intervalSeconds: number;
+  priceTarget?: number;
+  expiryDays: number;
+};
+
+/**
+ * Demo guard rails. The XRPL wallet is ours and its balance is finite, so the
+ * form is bounded server-side rather than trusting whatever the browser posts.
+ */
+const LIMITS = { maxAmountPerSlice: 20, maxSlices: 5, maxTotalFxrp: 40 };
+
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as Body;
+
+    if (!(body.amountPerSlice > 0) || body.amountPerSlice > LIMITS.maxAmountPerSlice) {
+      return NextResponse.json(
+        { error: `amountPerSlice must be between 0 and ${LIMITS.maxAmountPerSlice} FXRP` },
+        { status: 400 },
+      );
+    }
+    if (!Number.isInteger(body.slices) || body.slices < 1 || body.slices > LIMITS.maxSlices) {
+      return NextResponse.json({ error: `slices must be 1–${LIMITS.maxSlices}` }, { status: 400 });
+    }
+    if (body.amountPerSlice * body.slices > LIMITS.maxTotalFxrp) {
+      return NextResponse.json(
+        { error: `total order size is capped at ${LIMITS.maxTotalFxrp} FXRP on the demo` },
+        { status: 400 },
+      );
+    }
+    if (body.slices > 1 && body.intervalSeconds <= 0) {
+      return NextResponse.json({ error: "a multi-slice order needs an interval" }, { status: 400 });
+    }
+    if (body.kind !== "SCHEDULE" && !(body.priceTarget && body.priceTarget > 0)) {
+      return NextResponse.json({ error: "a price order needs a target" }, { status: 400 });
+    }
+    if (body.action === "VAULT_DEPOSIT" && !body.vault) {
+      return NextResponse.json({ error: "a vault deposit needs a vault" }, { status: 400 });
+    }
+
+    const params: OrderParams = {
+      kind: OrderKind[body.kind],
+      action: ActionKind[body.action],
+      vault: (body.action === "VAULT_DEPOSIT" ? body.vault! : ZERO_ADDRESS) as `0x${string}`,
+      xrplAddress:
+        body.action === "REDEEM_TO_XRPL" && body.xrplAddress
+          ? (`0x${Buffer.from(body.xrplAddress, "utf8").toString("hex")}` as `0x${string}`)
+          : "0x",
+      amountPerSlice: fxrpToUba(body.amountPerSlice),
+      slices: body.slices,
+      intervalSeconds: BigInt(Math.max(body.intervalSeconds, 0)),
+      priceTarget: body.priceTarget ? usdToWei(body.priceTarget) : 0n,
+      expiry: BigInt(Math.floor(Date.now() / 1000) + body.expiryDays * 86_400),
+    };
+
+    return NextResponse.json(await createOrder(params));
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to create the order" },
+      { status: 500 },
+    );
+  }
+}
