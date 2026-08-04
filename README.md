@@ -73,21 +73,37 @@ is how deferred execution is obtained from a primitive that has none.
 
 ## Status
 
-Pre-implementation. Design spec: [`docs/specs/2026-08-03-tempo-design.md`](docs/specs/2026-08-03-tempo-design.md).
-
-Day 0 chain probe (3 Aug 2026) confirms Smart Accounts is live on Coston2:
+Contracts are live on Coston2 and exercised against the real FTSO feed, the real FXRP token,
+and a real yield vault.
 
 | | |
 |---|---|
-| `MasterAccountController` | `0x434936d47503353f06750Db1A444DBDC5F0AD37c` |
-| Operator XRPL wallet | `rEyj8nsHLdgt79KJWzXR5BgF7ZbaohbXwq` |
-| Registered vaults | 4 |
-| Registered agent vaults | 1 |
+| `Tempo` | [`0xdf0D7Be968D27E7533e3b15b7e854Ee2357Efdf7`](https://coston2-explorer.flare.network/address/0xdf0D7Be968D27E7533e3b15b7e854Ee2357Efdf7) |
+| Tests | 17 unit + 5 fork, all passing |
+| Day 0 gate | [Flare tx `0xa7649a73…`](https://coston2-explorer.flare.network/tx/0xa7649a730cd3e6c24f9f763a16e41618cb43c8f5df5a0dd36577dd84553bc1ca) — one XRPL payment minted FXRP **and** ran a user operation, atomically |
+
+Still to build: the relayer, the keeper, and the frontend.
+
+- Design spec: [`docs/specs/2026-08-03-tempo-design.md`](docs/specs/2026-08-03-tempo-design.md)
+- Deployment record: [`docs/deployments.md`](docs/deployments.md)
+- Chain constants and Day 0 findings: [`docs/coston2-constants.md`](docs/coston2-constants.md)
+
+## Running the tests
+
+```bash
+git clone --recursive <repo> && cd <repo>/contracts
+forge test                                    # 17 unit tests, offline
+COSTON2_RPC_URL=https://coston2-api.flare.network/ext/C/rpc forge test   # + 5 fork tests
+```
+
+The fork tests are skipped without an RPC URL, so the default run stays offline and fast.
 
 ## Repository layout
 
 ```
+contracts/       Foundry project — Tempo.sol, adapters, tests
 docs/specs/      design specs (Tempo current; Obscura archived)
+docs/            chain constants, deployment record
 .agents/skills/  vendored Flare AI skills
 ```
 
