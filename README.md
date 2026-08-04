@@ -50,7 +50,7 @@ users are otherwise expected to drive by hand-crafting additional XRPL payments.
 2. User sends ONE untagged XRPL Payment to the FAssets Core Vault:
    memo = 0xFE | walletId | executorFeeUBA | keccak256(userOp)   [42 bytes]
 
-3. Relayer fetches an FDC Payment attestation and calls
+3. Relayer fetches an FDC XRPPayment attestation and calls
    AssetManager.executeDirectMintingWithData(proof, data).
    Atomically: FXRP is minted to the PersonalAccount, which runs
    [ FXRP.approve(Tempo, total), Tempo.createOrder(params) ].
@@ -69,7 +69,7 @@ is how deferred execution is obtained from a primitive that has none.
 | **Smart Accounts** | Entry point. One XRPL payment, no FLR, no EVM wallet |
 | **FAssets / FXRP** | The asset being scheduled; native redemption back to XRPL |
 | **FTSO v2** | The price trigger itself — not decorative; remove it and two of three order types cease to exist |
-| **FDC** | `Payment` attestation proving the XRPL payment to Flare |
+| **FDC** | `XRPPayment` attestation proving the XRPL payment to Flare |
 
 ## Status
 

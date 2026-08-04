@@ -123,7 +123,7 @@ deferred execution from a primitive with no deferral?
 1. XRPL user sends ONE untagged Payment to the FAssets Core Vault
    memo = 0xFE | walletId | executorFeeUBA | keccak256(abi.encode(userOp))   [42 bytes]
 
-2. Relayer sees the payment, fetches an FDC Payment attestation,
+2. Relayer sees the payment, fetches an FDC XRPPayment attestation,
    calls AssetManager.executeDirectMintingWithData(proof, data)
    The controller checks keccak256(data) == the memo commitment.
 
@@ -286,9 +286,12 @@ struct OrderParams {
 
 - `VaultDepositAdapter` — deposits into a vault from `MasterAccountController.getVaults()`.
   ERC-4626-shaped (Firelight / Upshift).
-- `RedeemAdapter` — FAssets redemption back to the user's XRPL address. **Redemption is
-  lot-aligned (1 lot = 10 FXRP)**, so `amountPerSlice` is validated against the current lot
-  size at creation and any remainder is left in the PersonalAccount rather than silently lost.
+- `RedeemAdapter` — FAssets redemption back to the user's XRPL address, via
+  `redeemAmount(amountUBA, xrplAddress, executor)`. **Revised 2026-08-04:** an earlier draft
+  assumed slices had to be lot-aligned (1 lot = 10 FXRP). `redeemAmount` accepts arbitrary UBA
+  and settles the remainder itself, so a slice need not be a whole lot. The real constraint is
+  `minimumRedeemAmountUBA`, which the adapter's `validate` checks at order creation so the
+  user learns about it while still on the compose screen.
 
 ### FTSO usage
 
@@ -307,7 +310,7 @@ The relayer is a stateless worker, driven by cron, with its job state in Supabas
 1. Poll XRPL for untagged payments to the Core Vault whose memo starts with `0xFE`
 2. Match the memo commitment to stored userOp bytes; sanity-check it (`sender` matches
    `getPersonalAccount(xrplAddress)`, `nonce == getNonce(personalAccount)`)
-3. Request an FDC `Payment` attestation, wait for finality
+3. Request an FDC `XRPPayment` attestation, wait for finality
 4. Call `executeDirectMintingWithData(proof, data)` with `msg.value == sum(call.value)` (zero for our calls)
 5. Record the resulting Flare tx against the XRPL tx
 
