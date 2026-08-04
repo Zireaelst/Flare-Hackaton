@@ -9,3 +9,7 @@ cache/
 broadcast/
 artifacts/
 .DS_Store
+
+# Foundry
+contracts/out/
+contracts/cache/
