@@ -97,7 +97,8 @@ PersonalAccount.
   scaling between the XRPL and Flare sides.
 - **`abi.encode(PackedUserOperation)` for a single one-call batch is already 800 bytes.**
   This settles `0xFE` over `0xFF`: the inline variant would be at the memo ceiling before a
-  second call was added.
+  second call was added. Tempo's real user operation — `approve` plus `createOrder`, measured
+  on 2026-08-05 — is **1344 bytes**, past the XRPL memo cap outright. `0xFF` was never viable.
 - **The attestation type is `XRPPayment`, not the legacy generic `Payment`.**
   Verifier endpoint `…/verifier/xrp/XRPPayment/prepareRequest`, source id `testXRP`.
   The two have different response shapes and `AssetManagerFXRP` accepts only the former.
