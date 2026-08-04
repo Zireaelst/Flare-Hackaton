@@ -70,9 +70,50 @@ Feed is live and fresh on Coston2, so the price triggers are demonstrable on tes
 | Plain direct mint to a Flare address | `4642505266410018` + `00000000` + recipient(20) | 32 bytes |
 | Smart Accounts custom instruction (`0xFE`) | `0xFE` + walletId(1) + executorFeeUBA(8) + `keccak256(userOp)`(32) | 42 bytes |
 
+## Day 0 gate — executed end to end on 2026-08-04
+
+One untagged XRPL Payment minted FXRP into a `PersonalAccount` **and** dispatched a user
+operation from it, atomically, in a single Flare transaction.
+
+| | |
+|---|---|
+| XRPL wallet | `rPP5BkPmiiXGUQ7bDJYY68k9pNdTadKkDb` |
+| PersonalAccount | `0xbbE8ACB8B3e9754Cd1f3961792183330cc1A458F` |
+| XRPL payment | `629D61A3C5A8C08F44B50BBAB248EA6E8B39368F882C465E91AB895EDA01EE9B` |
+| Flare tx | `0xa7649a730cd3e6c24f9f763a16e41618cb43c8f5df5a0dd36577dd84553bc1ca` |
+| Result | `UserOperationExecuted(personalAccount, nonce=0)`; FXRP 0 → 10.1; allowance 0 → max |
+
+The user operation was `FXRP.approve(spender, max)` — the first half of Tempo's real
+`callData`, chosen because it carries no native value and so needs no C2FLR on the
+PersonalAccount.
+
+### What the run established
+
+- **Direct minting does not enforce whole-lot amounts.** A 10.2 XRP payment minted
+  **10.1 FXRP** (`10100000` UBA), which is not a multiple of the 10 XRP lot. Lot alignment
+  constrains *redemption*, not direct minting. This is why `RedeemAdapter` uses
+  `redeemAmount(amountUBA, ...)` rather than `redeem(lots, ...)`.
+- **FXRP is 6-decimal**, so an amount in UBA is an amount in drops. Order amounts need no
+  scaling between the XRPL and Flare sides.
+- **`abi.encode(PackedUserOperation)` for a single one-call batch is already 800 bytes.**
+  This settles `0xFE` over `0xFF`: the inline variant would be at the memo ceiling before a
+  second call was added.
+- **The attestation type is `XRPPayment`, not the legacy generic `Payment`.**
+  Verifier endpoint `…/verifier/xrp/XRPPayment/prepareRequest`, source id `testXRP`.
+  The two have different response shapes and `AssetManagerFXRP` accepts only the former.
+- **`proofOwner` binds the proof to the executor.** It must be either the zero address or the
+  EOA that ends up calling `executeDirectMintingWithData`.
+- **`executorFeeUBA = 0` in the memo is accepted**, even though
+  `getDirectMintingExecutorFeeUBA` reports 0.1 XRP — the memo value is what is actually
+  deducted. Fees are taken from the payment, so the mint came out 0.1 XRP above the 10 XRP
+  requested.
+- **The `@flarenetwork/flare-wagmi-periphery-package` drags in `wagmi`**, which needs `react`,
+  `react-dom`, and `@tanstack/react-query` even in a headless Node script.
+
 ## Known gaps
 
-- Testnet XRP budget: 1 lot = 10 XRP, so a multi-slice DCA demo needs 100+ XRP funded on the
-  XRPL testnet wallet.
 - Vault type enum → protocol name mapping unverified.
-- Whether direct minting enforces whole-lot amounts, or accepts arbitrary AMG, is unverified.
+- Redemption has not yet been exercised end to end; `minimumRedeemAmountUBA` and the
+  redemption queue depth are read at order-creation time but unverified against a live agent.
+- `RedeemAdapter` is the redeemer of record, so agent-default claims accrue to the adapter
+  rather than the user. Out of scope for v1 (see the contract's NatSpec).
