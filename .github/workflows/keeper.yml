@@ -1,0 +1,43 @@
+name: Keeper
+
+# Executes any Tempo order whose trigger is satisfied.
+#
+# Scheduling lives here rather than in Vercel because Vercel's Hobby plan runs
+# cron at most once a day, which is useless for a DCA schedule or a price
+# trigger. GitHub Actions cron is free and unmetered on public repositories.
+#
+# This is a convenience, not an authority. `Tempo.execute` is permissionless and
+# the keeper supplies no price and no timestamp — only an order id. If this
+# workflow is disabled, orders stay valid and anyone can execute them; the only
+# thing lost is punctuality.
+
+on:
+  schedule:
+    # Every 10 minutes. GitHub queues rather than guarantees this, which is
+    # fine: a late execution is still a correct one.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute due orders
+        env:
+          KEEPER_URL: ${{ secrets.KEEPER_URL }}
+          KEEPER_SECRET: ${{ secrets.KEEPER_SECRET }}
+        run: |
+          if [ -z "$KEEPER_URL" ]; then
+            echo "KEEPER_URL is not set; nothing to do."
+            exit 0
+          fi
+
+          response=$(curl -sS --fail-with-body --max-time 120 \
+            -X POST "$KEEPER_URL" \
+            -H "Authorization: Bearer $KEEPER_SECRET")
+
+          echo "$response"
+
+          # A run that executed nothing is a normal outcome, not a failure.
+          # Only a transport or server error should turn the job red.
+          echo "$response" | grep -q '"error"' && exit 1 || exit 0
