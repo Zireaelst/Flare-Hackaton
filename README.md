@@ -152,6 +152,44 @@ the browser being closed.
 serverless function's budget, so the caller polls rather than the function sleeping. The same
 endpoint serves the browser and a cron job.
 
+## Stuck-mint recovery
+
+`executeDirectMintingWithData` is atomic: if anything reverts, the whole Flare transaction
+rolls back — but the XRP has already left the user's wallet and is sitting at the Core Vault.
+Nothing on Flare retries it. Smart Accounts documents a recovery protocol for exactly this, and
+expects the user to drive it by hand-crafting further XRPL payments.
+
+Tempo drives it automatically. On a revert the relayer diagnoses what actually happened from
+on-chain state rather than guessing from the revert reason:
+
+| On-chain state | What it means | Response |
+|---|---|---|
+| `isTransactionIdUsed` false | The payment is still at the Core Vault | `0xE0` skip-memo, then re-submit |
+| used, and the nonce moved | Someone else executed it first | Report success |
+| used, nonce unmoved | Minted, but the operation was skipped | `0xE1` fast-forward |
+| `DirectMintingDelayed` | Rate-limited, not refused | Wait for `executionAllowedAt`, retry |
+
+Two rules shape this. A **network error never triggers recovery** — recovery costs a real XRPL
+payment, and spending one to fix a timeout is worse than the timeout. And the UI never suggests
+resending: a second payment reuses the same nonce and strands itself too, which is the single
+worst move available and the one users reach for first.
+
+Verified on Coston2 by forcing a mint to revert (a user operation built against a deliberately
+wrong nonce), then watching the relayer recover it unattended:
+
+```
+mint reverted (0x06427aeb)
+  → diagnosed: payment stuck at the Core Vault
+  → 0xE0 skip-memo payment F43B02F8…, its own FDC round 1417033
+  → IgnoreMemoSet   0x37bff861…
+  → original re-submitted, FXRP released to the personal account
+  → a fresh order created normally afterwards (order #2)
+```
+
+`0xE2` (replace executor fee) is **not implemented**. Its byte layout is not published in any
+source we could verify against, and guessing the layout of a memo that moves money is how funds
+get stranded rather than recovered.
+
 ## Repository layout
 
 ```
