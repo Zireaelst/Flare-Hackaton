@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RelayJob } from "@/lib/relayer/types";
-import { STATUS_LABEL } from "@/lib/relayer/types";
+import { RELAY_STEPS, STATUS_LABEL } from "@/lib/relayer/types";
 import type { OrderView } from "@/lib/tempo/read";
 import {
   ACTION_LABEL,
@@ -35,14 +35,6 @@ type Form = {
   intervalSeconds: number;
   priceTarget: number;
 };
-
-const RELAY_STEPS: RelayJob["status"][] = [
-  "awaiting_xrpl_finality",
-  "attesting",
-  "awaiting_proof",
-  "executing",
-  "done",
-];
 
 export function DemoConsole() {
   const [state, setState] = useState<ChainState | null>(null);
@@ -375,8 +367,11 @@ export function DemoConsole() {
 }
 
 function Timeline({ job }: { job: RelayJob }) {
-  const currentIndex = RELAY_STEPS.indexOf(job.status);
   const failed = job.status === "failed";
+  // Recovery and rate-limit waits are detours off the happy path rather than
+  // steps on it, so the spine stays fixed and the detour is shown beside it.
+  const detour = job.status === "recovering" || job.status === "retrying" || job.status === "delayed";
+  const currentIndex = detour ? RELAY_STEPS.indexOf("executing") : RELAY_STEPS.indexOf(job.status);
 
   return (
     <div className="mt-5 space-y-1">
@@ -399,11 +394,35 @@ function Timeline({ job }: { job: RelayJob }) {
               <p className={`text-sm ${done || active ? "text-foreground" : "text-muted"}`}>
                 {STATUS_LABEL[status]}
               </p>
-              {active && <p className="mt-0.5 text-xs text-muted">{job.message}</p>}
+              {active && !detour && <p className="mt-0.5 text-xs text-muted">{job.message}</p>}
             </div>
           </div>
         );
       })}
+
+      {detour && (
+        <div className="mt-3 rounded-xl border border-line bg-accent-soft p-4">
+          <p className="text-sm font-medium text-accent">{STATUS_LABEL[job.status]}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted">{job.message}</p>
+          {job.recovery && (
+            <p className="mt-2 text-[11px] leading-relaxed text-muted">
+              Something went wrong with the mint, so Tempo is fixing it for you. Your XRP is safe
+              at the vault the whole time — no action needed, and please do not send another
+              payment.
+            </p>
+          )}
+          {job.recovery?.flareTxHash && (
+            <a
+              href={`${EXPLORER}/tx/${job.recovery.flareTxHash}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-block font-mono text-[11px] text-muted transition-colors hover:text-foreground"
+            >
+              recovery tx {shortAddress(job.recovery.flareTxHash)} ↗
+            </a>
+          )}
+        </div>
+      )}
 
       {failed && (
         <div className="mt-3 rounded-xl border border-line bg-surface-2 p-4">
