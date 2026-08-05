@@ -14,6 +14,8 @@ type Body = {
   intervalSeconds: number;
   priceTarget?: number;
   expiryDays: number;
+  /** Dev-only: force a stuck mint to exercise recovery. See createOrder. */
+  debugNonceOffset?: number;
 };
 
 /**
@@ -66,7 +68,13 @@ export async function POST(request: Request) {
       expiry: BigInt(Math.floor(Date.now() / 1000) + body.expiryDays * 86_400),
     };
 
-    return NextResponse.json(await createOrder(params));
+    // Never reachable in production: the flag is not set there.
+    const nonceOffset =
+      process.env.ALLOW_DEBUG_ENDPOINTS === "1" && body.debugNonceOffset
+        ? BigInt(body.debugNonceOffset)
+        : 0n;
+
+    return NextResponse.json(await createOrder(params, nonceOffset));
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create the order" },
