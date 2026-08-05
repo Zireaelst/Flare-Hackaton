@@ -1,5 +1,48 @@
 # Deployments
 
+## App — Vercel
+
+**https://tempo-three-orpin.vercel.app**
+
+| | |
+|---|---|
+| Project | `zireaelsts-projects/tempo` |
+| Root directory | `web/` |
+| Plan | Hobby (free) |
+
+Deploy with `cd web && vercel --prod`.
+
+> **Use the `tempo-three-orpin` alias, not the project-scoped URLs.** Vercel's deployment
+> protection puts `tempo-*-zireaelsts-projects.vercel.app` behind SSO, so those return a 302 to
+> a login page for anyone who is not the project owner — including hackathon judges. Only the
+> generated public alias is reachable anonymously.
+
+### Environment
+
+Set for both production and preview via `vercel env add`:
+
+| Variable | Notes |
+|---|---|
+| `RELAYER_PRIVATE_KEY` | Pays gas for FDC requests, the direct mint, and keeper executions |
+| `DEMO_XRPL_SEED` | Signs the demo's XRPL payment |
+| `KEEPER_SECRET` | Guards `/api/keeper`; verified returning 401 without it |
+| `COSTON2_RPC_URL`, `XRPL_TESTNET_RPC_URL`, `TEMPO_ADDRESS`, `XRP_USD_FEED_ID` | Non-secret, set explicitly so the deployment does not silently fall back to defaults |
+
+### Verified in production on 2026-08-05
+
+- `/`, `/demo`, `/api/state` all 200, reading live FTSO and order state
+- `/api/keeper` executed a real slice:
+  [`0x4d4fa32a…`](https://coston2-explorer.flare.network/tx/0x4d4fa32ac5ea9a3823dbf57bb7df290919a16fff5e66a670ef07e3c0b31b02f8)
+- `/api/keeper` without the bearer token returns 401
+
+### Known exposure
+
+`/api/orders` is unauthenticated. Anyone who finds the URL can make the demo wallet send XRP
+and the relayer spend C2FLR. Order size is capped server-side (20 FXRP per slice, 5 slices,
+40 FXRP total) but there is no rate limit. Both wallets are testnet-only and refillable from
+public faucets, so the worst case is that the demo runs dry and needs topping up — but it is a
+deliberate trade for a frictionless judge experience, not an oversight.
+
 ## Coston2 (chainId 114)
 
 Deployed 2026-08-04 via `contracts/script/Deploy.s.sol`.
