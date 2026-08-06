@@ -54,6 +54,9 @@ contract Tempo is ReentrancyGuard {
     ///      trying to get all the way out.
     uint256 public constant WHOLE_BALANCE = type(uint256).max;
 
+    /// @notice `cancelsOrderId` sentinel meaning "this order cancels nothing".
+    uint256 public constant NO_LINKED_ORDER = type(uint256).max;
+
     struct OrderParams {
         OrderKind kind;
         ActionKind action;
@@ -79,6 +82,9 @@ contract Tempo is ReentrancyGuard {
         uint64 nextExecutionAt;
         uint64 expiry;
         uint256 priceTarget;
+        /// @dev Cancelled automatically when this order executes. See
+        ///      `createOrderWithExit`.
+        uint256 cancelsOrderId;
         bytes xrplAddress;
     }
 
@@ -130,6 +136,7 @@ contract Tempo is ReentrancyGuard {
         uint256 price
     );
     event OrderCancelledEvent(uint256 indexed orderId, address indexed owner, uint32 slicesRemaining);
+    event OrdersLinked(uint256 indexed exitOrderId, uint256 indexed planOrderId);
 
     // --- Immutables ---------------------------------------------------------
 
@@ -182,7 +189,32 @@ contract Tempo is ReentrancyGuard {
     /// @dev The caller is the owner. There is deliberately no `owner`
     ///      parameter: an order can only ever be created for the account that
     ///      creates it, so a relayer cannot register orders on someone's behalf.
+    /// @notice Create a plan and the exit that unwinds it, linked.
+    /// @dev Two orders in one call because the link cannot be expressed
+    ///      otherwise: the user operation is encoded before either order
+    ///      exists, so the client cannot know the plan's id to point the exit
+    ///      at. Predicting it from `orderCount` would break the moment someone
+    ///      else's order landed in between.
+    ///
+    ///      When the exit fires it cancels the plan. Without that, a stop-loss
+    ///      unwinds the position and the schedule immediately buys back into
+    ///      the fall — the user pays gas to leave and is returned to where they
+    ///      started. Observed on Coston2 before this existed.
+    function createOrderWithExit(OrderParams calldata plan, OrderParams calldata exit)
+        external
+        returns (uint256 planId, uint256 exitId)
+    {
+        planId = _createOrder(plan);
+        exitId = _createOrder(exit);
+        _orders[exitId].cancelsOrderId = planId;
+        emit OrdersLinked(exitId, planId);
+    }
+
     function createOrder(OrderParams calldata params) external returns (uint256 orderId) {
+        return _createOrder(params);
+    }
+
+    function _createOrder(OrderParams calldata params) internal returns (uint256 orderId) {
         if (params.amountPerSlice == 0) revert InvalidAmount();
         if (params.slices == 0) revert InvalidSlices();
         if (params.expiry <= block.timestamp) revert InvalidExpiry();
@@ -234,6 +266,7 @@ contract Tempo is ReentrancyGuard {
                 nextExecutionAt: uint64(block.timestamp),
                 expiry: params.expiry,
                 priceTarget: params.priceTarget,
+                cancelsOrderId: NO_LINKED_ORDER,
                 xrplAddress: params.xrplAddress
             })
         );
@@ -298,6 +331,18 @@ contract Tempo is ReentrancyGuard {
         }
 
         emit OrderExecuted(orderId, order.owner, msg.sender, slice, amount, price);
+
+        // Disarm the plan this exit was written to protect. No ownership check
+        // is needed or wanted: the link was fixed at creation by the owner
+        // themselves, and only Tempo can set it.
+        uint256 linked = order.cancelsOrderId;
+        if (linked != NO_LINKED_ORDER) {
+            Order storage plan = _orders[linked];
+            if (!plan.cancelled && plan.slicesExecuted < plan.slices) {
+                plan.cancelled = true;
+                emit OrderCancelledEvent(linked, plan.owner, plan.slices - plan.slicesExecuted);
+            }
+        }
     }
 
     /// @notice Stop an order. Only the owning PersonalAccount may call this,

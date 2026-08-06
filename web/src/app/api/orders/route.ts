@@ -24,6 +24,8 @@ type Body = {
   expiryDays: number;
   /** Optional: unwind the position when XRP/USD falls to this price. */
   exitBelow?: number;
+  /** Stop the plan when the exit fires. Defaults to true. */
+  stopPlanOnExit?: boolean;
   /** Dev-only: force a stuck mint to exercise recovery. See createOrder. */
   debugNonceOffset?: number;
 };
@@ -102,7 +104,9 @@ export async function POST(request: Request) {
         ? BigInt(body.debugNonceOffset)
         : 0n;
 
-    return NextResponse.json(await createOrder(params, exit, nonceOffset));
+    return NextResponse.json(
+      await createOrder(params, exit, body.stopPlanOnExit !== false, nonceOffset),
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create the order" },

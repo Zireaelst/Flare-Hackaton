@@ -37,6 +37,7 @@ type Form = {
   priceTarget: number;
   exitBelow: number;
   protect: boolean;
+  stopPlanOnExit: boolean;
 };
 
 export function DemoConsole() {
@@ -59,6 +60,7 @@ export function DemoConsole() {
     priceTarget: 1,
     exitBelow: 0.9,
     protect: true,
+    stopPlanOnExit: true,
   });
 
   const refresh = useCallback(async () => {
@@ -334,13 +336,29 @@ export function DemoConsole() {
                   </span>
                 </label>
                 {form.protect && (
-                  <div className="mt-3">
-                    <NumberInput
-                      value={form.exitBelow}
-                      step={0.01}
-                      onChange={(exitBelow) => setForm({ ...form, exitBelow })}
-                    />
-                  </div>
+                  <>
+                    <div className="mt-3">
+                      <NumberInput
+                        value={form.exitBelow}
+                        step={0.01}
+                        onChange={(exitBelow) => setForm({ ...form, exitBelow })}
+                      />
+                    </div>
+                    <label className="mt-3 flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={form.stopPlanOnExit}
+                        onChange={(event) =>
+                          setForm({ ...form, stopPlanOnExit: event.target.checked })
+                        }
+                        className="mt-0.5 accent-[var(--accent)]"
+                      />
+                      <span className="text-[11px] leading-relaxed text-muted">
+                        Stop the schedule too when the exit fires. Without this it keeps buying
+                        into the fall right after pulling you out.
+                      </span>
+                    </label>
+                  </>
                 )}
               </div>
             )}

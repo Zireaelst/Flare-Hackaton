@@ -69,11 +69,14 @@ export function buildOrderCalls({
   tempo,
   params,
   exit,
+  linkExit = true,
 }: {
   fxrp: Address;
   tempo: Address;
   params: OrderParams;
   exit?: OrderParams;
+  /** When false the two orders are independent and the plan keeps running. */
+  linkExit?: boolean;
 }) {
   const total = params.amountPerSlice * BigInt(params.slices);
 
@@ -98,26 +101,45 @@ export function buildOrderCalls({
 
   if (!exit) return calls;
 
-  calls.push(
-    {
-      target: exit.vault,
-      value: 0n,
-      data: encodeFunctionData({
-        abi: erc20Abi,
-        functionName: "approve",
-        // Unlimited, unavoidably: the shares this will spend do not exist yet,
-        // and their count keeps changing as the plan runs and yield accrues.
-        // The allowance is only reachable through an order the user wrote, and
-        // only once its trigger is genuinely satisfied on-chain.
-        args: [tempo, WHOLE_BALANCE],
-      }),
-    },
-    {
+  const shareApproval = {
+    target: exit.vault,
+    value: 0n,
+    data: encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "approve" as const,
+      // Unlimited, unavoidably: the shares this will spend do not exist yet,
+      // and their count keeps changing as the plan runs and yield accrues.
+      // The allowance is only reachable through an order the user wrote, and
+      // only once its trigger is genuinely satisfied on-chain.
+      args: [tempo, WHOLE_BALANCE] as const,
+    }),
+  };
+
+  if (!linkExit) {
+    // Two independent orders: the exit unwinds the position and the schedule
+    // carries on regardless.
+    calls.push(shareApproval, {
       target: tempo,
       value: 0n,
       data: encodeFunctionData({ abi: tempoAbi, functionName: "createOrder", args: [exit] }),
-    },
-  );
+    });
+    return calls;
+  }
+
+  // Linked: one call creates both orders and ties them together. The client
+  // cannot do this itself — the plan's id does not exist until the transaction
+  // runs, and predicting it from orderCount breaks the moment someone else's
+  // order lands in between.
+  calls.pop();
+  calls.push(shareApproval, {
+    target: tempo,
+    value: 0n,
+    data: encodeFunctionData({
+      abi: tempoAbi,
+      functionName: "createOrderWithExit",
+      args: [params, exit],
+    }),
+  });
 
   return calls;
 }

@@ -73,6 +73,15 @@ argument does.
 underlying payment, the default claim accrues to the adapter rather than to the user.
 Out of scope for v1: handling it needs an FDC non-payment proof and per-request accounting.
 
+### The keeper reads what is due once per run
+
+`dueOrders` is evaluated at the start of a run, so an order that only becomes
+executable *because of* an earlier order in the same run is picked up on the
+next one. Observed: an exit sized at `WHOLE_BALANCE` is not due while the vault
+position is empty, and becomes due the moment the plan's first slice lands. This
+costs punctuality, never correctness, and re-reading between every execution
+would multiply the scan cost by the number of due orders.
+
 ### `dueOrders` is O(n)
 
 The keeper's scan reads every order and its executability. This is deliberate — it means no

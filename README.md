@@ -94,11 +94,11 @@ and a real yield vault.
 
 | Contract | Address |
 |---|---|
-| `Tempo` | [`0x5cDE13104be89E7d4f95001DD428fAd6F27E7a10`](https://coston2-explorer.flare.network/address/0x5cDE13104be89E7d4f95001DD428fAd6F27E7a10) |
-| `VaultDepositAdapter` | [`0xc7783B9e05da6A00d59E007Ad28f4A283141d1E6`](https://coston2-explorer.flare.network/address/0xc7783B9e05da6A00d59E007Ad28f4A283141d1E6) |
-| `VaultWithdrawAdapter` | [`0x5D7AAB46950F56Ac423Cc4f16f9D5212257D9905`](https://coston2-explorer.flare.network/address/0x5D7AAB46950F56Ac423Cc4f16f9D5212257D9905) |
-| `RedeemAdapter` | [`0x0062CBa2B76c7D3E2Eb246b5EbddABE2d2A7387B`](https://coston2-explorer.flare.network/address/0x0062CBa2B76c7D3E2Eb246b5EbddABE2d2A7387B) |
-| `SwapAdapter` | [`0xC63DD34Ed4a35196866A9cd6dB8c13E13eb5218d`](https://coston2-explorer.flare.network/address/0xC63DD34Ed4a35196866A9cd6dB8c13E13eb5218d) |
+| `Tempo` | [`0x5B281A91b54bd2E43f9f39A5AEF0CC7BbF15Fb6D`](https://coston2-explorer.flare.network/address/0x5B281A91b54bd2E43f9f39A5AEF0CC7BbF15Fb6D) |
+| `VaultDepositAdapter` | [`0xfcBDC27153263A90FAa3ffed4aB25FACC6351a59`](https://coston2-explorer.flare.network/address/0xfcBDC27153263A90FAa3ffed4aB25FACC6351a59) |
+| `VaultWithdrawAdapter` | [`0x48b4B2796f051041d393aD2d1B615D21419EC7de`](https://coston2-explorer.flare.network/address/0x48b4B2796f051041d393aD2d1B615D21419EC7de) |
+| `RedeemAdapter` | [`0x22eB0F7075481eCB8c3b544d8ee8101400e6a47A`](https://coston2-explorer.flare.network/address/0x22eB0F7075481eCB8c3b544d8ee8101400e6a47A) |
+| `SwapAdapter` | [`0x47E5dEBF37a1201FB77a23E6C7872940C7b713fc`](https://coston2-explorer.flare.network/address/0x47E5dEBF37a1201FB77a23E6C7872940C7b713fc) |
 
 ### Flare contracts Tempo builds on
 
@@ -112,7 +112,8 @@ and a real yield vault.
 
 | | |
 |---|---|
-| Tests | 33, all passing — 25 unit, 5 against live Coston2, 3 against Flare mainnet |
+| Tests | 35, all passing — 27 unit, 5 against live Coston2, 3 against Flare mainnet |
+| Linked exit | [Flare tx](https://coston2-explorer.flare.network/address/0x5B281A91b54bd2E43f9f39A5AEF0CC7BbF15Fb6D) — an exit unwound the position and disarmed the plan behind it |
 | Day 0 gate | [Flare tx `0xa7649a73…`](https://coston2-explorer.flare.network/tx/0xa7649a730cd3e6c24f9f763a16e41618cb43c8f5df5a0dd36577dd84553bc1ca) — one XRPL payment minted FXRP **and** ran a user operation, atomically |
 | First live order | [Flare tx `0x5170eca5…`](https://coston2-explorer.flare.network/tx/0x5170eca5681c235bddf200c5900d4fcc6eefc8201cc0a38e2453e7823bd2aa90) — one XRPL payment created a 2-slice DCA order |
 | First execution | [Flare tx `0x70e08dbc…`](https://coston2-explorer.flare.network/tx/0x70e08dbc42c497d2255f1f0070258f991524e1c383440cb1c3a888c983dc136a) — the keeper deposited slice 1 into a live vault |

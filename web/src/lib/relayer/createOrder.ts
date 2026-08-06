@@ -27,6 +27,7 @@ export type CreateOrderResult = {
 export async function createOrder(
   params: OrderParams,
   exit: OrderParams | undefined,
+  linkExit: boolean,
   /**
    * Deliberately build the user operation against the wrong nonce, so the mint
    * reverts with `InvalidNonce` and the payment strands at the Core Vault.
@@ -48,7 +49,7 @@ export async function createOrder(
   // the same nonce means one of them reverts and strands its XRP.
   const nonce = await getNonce(personalAccount);
 
-  const calls = buildOrderCalls({ fxrp, tempo: config.tempoAddress, params, exit });
+  const calls = buildOrderCalls({ fxrp, tempo: config.tempoAddress, params, exit, linkExit });
   const { memoData, userOpData } = encodeCustomInstructionMemo({
     calls,
     sender: personalAccount,

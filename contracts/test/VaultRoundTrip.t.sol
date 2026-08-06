@@ -225,6 +225,96 @@ contract VaultRoundTripTest is Test {
         assertEq(vault.balanceOf(user), 0);
     }
 
+    /// @dev The behaviour this was built to stop, observed on Coston2 first:
+    ///      the stop fires, the position is unwound, and the schedule promptly
+    ///      buys back into the fall. The user pays gas to leave and ends up
+    ///      where they started.
+    function test_exitDisarmsThePlanItProtects() public {
+        Tempo.OrderParams memory plan = Tempo.OrderParams({
+            kind: Tempo.OrderKind.SCHEDULE,
+            action: Tempo.ActionKind.VAULT_DEPOSIT,
+            vault: address(vault),
+            xrplAddress: "",
+            amountPerSlice: 5 * ONE_FXRP,
+            slices: 3,
+            intervalSeconds: 1 days,
+            priceTarget: 0,
+            expiry: uint64(block.timestamp + 365 days)
+        });
+        Tempo.OrderParams memory exit = Tempo.OrderParams({
+            kind: Tempo.OrderKind.STOP_LOSS,
+            action: Tempo.ActionKind.VAULT_WITHDRAW,
+            vault: address(vault),
+            xrplAddress: "",
+            amountPerSlice: WHOLE_BALANCE,
+            slices: 1,
+            intervalSeconds: 0,
+            priceTarget: 0.90e18,
+            expiry: uint64(block.timestamp + 365 days)
+        });
+
+        vm.prank(user);
+        (uint256 planId, uint256 exitId) = tempo.createOrderWithExit(plan, exit);
+
+        vm.prank(keeper);
+        tempo.execute(planId);
+        assertEq(vault.balanceOf(user), 5 * ONE_FXRP);
+
+        ftso.set(0.89e18, uint64(block.timestamp));
+        vm.prank(keeper);
+        tempo.execute(exitId);
+
+        assertEq(vault.balanceOf(user), 0, "the position should be unwound");
+        assertTrue(tempo.getOrder(planId).cancelled, "the plan should be disarmed");
+
+        // The schedule must not resume buying into the fall.
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(keeper);
+        vm.expectRevert(Tempo.OrderCancelled.selector);
+        tempo.execute(planId);
+        assertEq(fxrp.balanceOf(user), 100 * ONE_FXRP, "the user should be whole");
+    }
+
+    /// @dev A plan that finished on its own must not be reported as cancelled
+    ///      just because its exit later fired.
+    function test_exitDoesNotCancelACompletedPlan() public {
+        Tempo.OrderParams memory plan = Tempo.OrderParams({
+            kind: Tempo.OrderKind.SCHEDULE,
+            action: Tempo.ActionKind.VAULT_DEPOSIT,
+            vault: address(vault),
+            xrplAddress: "",
+            amountPerSlice: 5 * ONE_FXRP,
+            slices: 1,
+            intervalSeconds: 1 days,
+            priceTarget: 0,
+            expiry: uint64(block.timestamp + 365 days)
+        });
+        Tempo.OrderParams memory exit = Tempo.OrderParams({
+            kind: Tempo.OrderKind.STOP_LOSS,
+            action: Tempo.ActionKind.VAULT_WITHDRAW,
+            vault: address(vault),
+            xrplAddress: "",
+            amountPerSlice: WHOLE_BALANCE,
+            slices: 1,
+            intervalSeconds: 0,
+            priceTarget: 0.90e18,
+            expiry: uint64(block.timestamp + 365 days)
+        });
+
+        vm.prank(user);
+        (uint256 planId, uint256 exitId) = tempo.createOrderWithExit(plan, exit);
+
+        vm.prank(keeper);
+        tempo.execute(planId);
+
+        ftso.set(0.89e18, uint64(block.timestamp));
+        vm.prank(keeper);
+        tempo.execute(exitId);
+
+        assertFalse(tempo.getOrder(planId).cancelled, "a finished plan was not cancelled, it was completed");
+        assertEq(tempo.getOrder(planId).slicesExecuted, 1);
+    }
+
     /// @dev The withdraw adapter must refuse vaults outside its allowlist, the
     ///      same as the deposit side.
     function test_withdrawRejectsUnknownVault() public {

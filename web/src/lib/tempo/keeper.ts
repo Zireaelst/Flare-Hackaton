@@ -19,6 +19,54 @@ export type KeeperResult = {
 const ACTION_VAULT_WITHDRAW = 2;
 
 /**
+ * Headroom on top of the gas estimate.
+ *
+ * An estimate is what the call cost against *current* state, with no margin.
+ * Tempo's executions nest deeply — Tempo, then an adapter, then a vault whose
+ * redeem alone runs ~190k — and EIP-150 forwards only 63/64 of the remaining
+ * gas at each hop, so a tight estimate can leave the outermost frame short at
+ * the very end. Seen on Coston2: an exit that pulled the shares, filed the
+ * withdrawal and emitted its event, then ran out of gas on the last storage
+ * write and reverted the lot.
+ */
+const GAS_BUFFER_PERCENT = 150n;
+
+/** Estimate, then send with headroom. */
+async function sendWithBuffer(request: {
+  address: `0x${string}`;
+  abi: readonly unknown[];
+  functionName: string;
+  args: readonly unknown[];
+}): Promise<`0x${string}`> {
+  const account = relayerAccount();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const params = { account, ...request } as any;
+  const estimate = await publicClient.estimateContractGas(params);
+
+  return walletClient().writeContract({
+    ...params,
+    chain: null,
+    gas: (estimate * GAS_BUFFER_PERCENT) / 100n,
+  });
+}
+
+/**
+ * Wait for a receipt and treat a reverted transaction as the failure it is.
+ *
+ * `waitForTransactionReceipt` resolves for reverted transactions too. Without
+ * this check the keeper reported every send as executed, so an operator
+ * watching its output would have seen orders "firing" that had in fact all
+ * reverted — which is exactly how the out-of-gas above went unnoticed.
+ */
+async function confirm(hash: `0x${string}`): Promise<void> {
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status === "reverted") {
+    throw new Error(`transaction reverted (${hash})`);
+  }
+}
+
+/**
  * Execute every order that is due, then finish any withdrawal the vault has
  * released.
  *
@@ -63,15 +111,13 @@ export async function runKeeper(maxOrders = 100): Promise<KeeperResult> {
         args: [orderId],
       });
 
-      const hash = await walletClient().writeContract({
-        account: relayerAccount(),
-        chain: null,
+      const hash = await sendWithBuffer({
         address: config.tempoAddress,
         abi: tempoAbi,
         functionName: "execute",
         args: [orderId],
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await confirm(hash);
       executed.push({ orderId: orderId.toString(), txHash: hash });
     } catch (error) {
       // One bad order must not stop the rest. A failure here is expected
@@ -134,15 +180,13 @@ async function settleWithdrawals(
           args: [BigInt(withdrawal.year), BigInt(withdrawal.month), BigInt(withdrawal.day), owner],
         });
 
-        const hash = await walletClient().writeContract({
-          account: relayerAccount(),
-          chain: null,
+        const hash = await sendWithBuffer({
           address: vault,
           abi: epochVaultAbi,
           functionName: "claim",
           args: [BigInt(withdrawal.year), BigInt(withdrawal.month), BigInt(withdrawal.day), owner],
         });
-        await publicClient.waitForTransactionReceipt({ hash });
+        await confirm(hash);
         claimed.push({ vault, receiver: owner, shares: withdrawal.shares, txHash: hash });
       } catch {
         // Not released yet. This is the normal state for most of a period, so

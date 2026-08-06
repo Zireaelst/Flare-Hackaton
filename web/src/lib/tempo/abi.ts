@@ -48,6 +48,19 @@ export const tempoAbi = [
   },
   {
     "type": "function",
+    "name": "NO_LINKED_ORDER",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "WHOLE_BALANCE",
     "inputs": [],
     "outputs": [
@@ -132,6 +145,129 @@ export const tempoAbi = [
     "outputs": [
       {
         "name": "orderId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "createOrderWithExit",
+    "inputs": [
+      {
+        "name": "plan",
+        "type": "tuple",
+        "internalType": "struct Tempo.OrderParams",
+        "components": [
+          {
+            "name": "kind",
+            "type": "uint8",
+            "internalType": "enum Tempo.OrderKind"
+          },
+          {
+            "name": "action",
+            "type": "uint8",
+            "internalType": "enum Tempo.ActionKind"
+          },
+          {
+            "name": "vault",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "xrplAddress",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "amountPerSlice",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "slices",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "intervalSeconds",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "priceTarget",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "expiry",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      },
+      {
+        "name": "exit",
+        "type": "tuple",
+        "internalType": "struct Tempo.OrderParams",
+        "components": [
+          {
+            "name": "kind",
+            "type": "uint8",
+            "internalType": "enum Tempo.OrderKind"
+          },
+          {
+            "name": "action",
+            "type": "uint8",
+            "internalType": "enum Tempo.ActionKind"
+          },
+          {
+            "name": "vault",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "xrplAddress",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "amountPerSlice",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "slices",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "intervalSeconds",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "priceTarget",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "expiry",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "exitId",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -274,6 +410,11 @@ export const tempoAbi = [
           },
           {
             "name": "priceTarget",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "cancelsOrderId",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -496,6 +637,25 @@ export const tempoAbi = [
         "name": "price",
         "type": "uint256",
         "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OrdersLinked",
+    "inputs": [
+      {
+        "name": "exitOrderId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "planOrderId",
+        "type": "uint256",
+        "indexed": true,
         "internalType": "uint256"
       }
     ],
