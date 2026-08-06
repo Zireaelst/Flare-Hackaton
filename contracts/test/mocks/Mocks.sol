@@ -54,6 +54,9 @@ contract MockAdapter is IActionAdapter {
     bytes public lastXrplAddress;
 
     bool public validateReverts;
+    /// @dev Basis points of the offered amount this adapter actually consumes.
+    ///      Anything below 10000 leaves a remainder behind in Tempo.
+    uint16 public pullBips = 10_000;
 
     error ValidationRejected();
 
@@ -66,6 +69,10 @@ contract MockAdapter is IActionAdapter {
         validateReverts = value;
     }
 
+    function setPullBips(uint16 value) external {
+        pullBips = value;
+    }
+
     function inputToken(address) external view returns (address) {
         return address(token);
     }
@@ -75,9 +82,10 @@ contract MockAdapter is IActionAdapter {
     }
 
     function perform(address beneficiary, address, bytes calldata xrplAddress, uint256 amount) external {
-        token.safeTransferFrom(tempo, address(this), amount);
+        uint256 pulled = (amount * pullBips) / 10_000;
+        token.safeTransferFrom(tempo, address(this), pulled);
         performCount++;
-        totalPulled += amount;
+        totalPulled += pulled;
         lastBeneficiary = beneficiary;
         lastXrplAddress = xrplAddress;
     }

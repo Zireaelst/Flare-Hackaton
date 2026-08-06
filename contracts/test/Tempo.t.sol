@@ -340,6 +340,45 @@ contract TempoTest is Test {
         assertEq(fxrp.allowance(address(tempo), address(vaultAdapter)), 0, "adapter allowance must be revoked");
     }
 
+    /// @dev Tempo is not a wallet. An adapter that consumes less than it was
+    ///      offered must not leave the difference sitting here — there is no
+    ///      way to get it back out, so the remainder has to go home in the same
+    ///      transaction.
+    function test_unspentAmountGoesBackToTheOwner() public {
+        vaultAdapter.setPullBips(6_000); // consumes 60%, leaves 40% behind
+
+        uint256 amount = 10 * ONE_FXRP;
+        uint256 id = _create(_scheduleParams(amount, 1, 1 days));
+        uint256 balanceBefore = fxrp.balanceOf(user);
+
+        vm.prank(keeper);
+        tempo.execute(id);
+
+        assertEq(vaultAdapter.totalPulled(), (amount * 6_000) / 10_000);
+        assertEq(fxrp.balanceOf(address(tempo)), 0, "Tempo must not keep the remainder");
+        assertEq(
+            fxrp.balanceOf(user),
+            balanceBefore - (amount * 6_000) / 10_000,
+            "the user should only be out what was actually used"
+        );
+    }
+
+    /// @dev A donation sitting in Tempo must not be swept into whoever happens
+    ///      to execute next.
+    function test_straySurplusIsNotTreatedAsTheUsersMoney() public {
+        fxrp.mint(address(tempo), 7 * ONE_FXRP);
+
+        uint256 amount = 10 * ONE_FXRP;
+        uint256 id = _create(_scheduleParams(amount, 1, 1 days));
+        uint256 balanceBefore = fxrp.balanceOf(user);
+
+        vm.prank(keeper);
+        tempo.execute(id);
+
+        assertEq(fxrp.balanceOf(user), balanceBefore - amount, "the stray balance is not a refund");
+        assertEq(fxrp.balanceOf(address(tempo)), 7 * ONE_FXRP, "it stays where it was");
+    }
+
     // --- Creation validation -------------------------------------------------
 
     function test_createOrderRejectsBadParams() public {

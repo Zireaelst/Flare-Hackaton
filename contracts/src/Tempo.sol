@@ -276,12 +276,26 @@ contract Tempo is ReentrancyGuard {
         uint256 amount = _resolveAmount(order, token);
         if (amount == 0) revert NothingToMove();
 
+        // Measured before the pull, not assumed to be zero: a stray transfer to
+        // this contract must not be mistaken for the user's money.
+        uint256 balanceBefore = token.balanceOf(address(this));
+
         token.safeTransferFrom(order.owner, address(this), amount);
         token.forceApprove(address(adapter), amount);
         adapter.perform(order.owner, order.vault, order.xrplAddress, amount);
         // Adapters are trusted code, but a partial pull would otherwise leave a
         // standing allowance behind. Revoke unconditionally.
         token.forceApprove(address(adapter), 0);
+
+        // Tempo is not a wallet. Every adapter today consumes the whole amount,
+        // but an adapter that consumed less would silently strand the remainder
+        // here forever with no way to retrieve it. Returning it turns a future
+        // bug into a refund, and keeps the "holds nothing between executions"
+        // claim true by construction rather than by convention.
+        uint256 unspent = token.balanceOf(address(this)) - balanceBefore;
+        if (unspent > 0) {
+            token.safeTransfer(order.owner, unspent);
+        }
 
         emit OrderExecuted(orderId, order.owner, msg.sender, slice, amount, price);
     }

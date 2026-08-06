@@ -49,13 +49,13 @@ Deployed 2026-08-04 via `contracts/script/Deploy.s.sol`.
 
 | Contract | Address |
 |---|---|
-| `Tempo` | `0xe77A68818D9c75658D4c388996a9110d6B174870` |
-| `VaultDepositAdapter` | `0x332dA3E974DfAB81Ef1B1408B80989E5172046Fb` |
-| `VaultWithdrawAdapter` | `0xb2cf8B3eAC04AC80c22Fbf3FBc7502E5E32499Bb` |
-| `RedeemAdapter` | `0x3FA90083499BaF1229d65BD5B6E24A52CEF70176` |
-| `SwapAdapter` | `0x272E15fAc305a4dCdE8F5a9dEAac84288BC2A56C` |
+| `Tempo` | `0x5cDE13104be89E7d4f95001DD428fAd6F27E7a10` |
+| `VaultDepositAdapter` | `0xc7783B9e05da6A00d59E007Ad28f4A283141d1E6` |
+| `VaultWithdrawAdapter` | `0x5D7AAB46950F56Ac423Cc4f16f9D5212257D9905` |
+| `RedeemAdapter` | `0x0062CBa2B76c7D3E2Eb246b5EbddABE2d2A7387B` |
+| `SwapAdapter` | `0xC63DD34Ed4a35196866A9cd6dB8c13E13eb5218d` |
 
-Explorer: `https://coston2-explorer.flare.network/address/0xe77A68818D9c75658D4c388996a9110d6B174870`
+Explorer: `https://coston2-explorer.flare.network/address/0x5cDE13104be89E7d4f95001DD428fAd6F27E7a10`
 
 > Each redeployment orphans the previous one's orders. The constructor gains a
 > parameter every time an action is added, so the adapters cannot be repointed

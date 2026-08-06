@@ -26,7 +26,7 @@ export const config = {
   /** Same address on every Flare network; everything else is resolved through it. */
   contractRegistry: "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019" as const,
 
-  tempoAddress: optional("TEMPO_ADDRESS", "0xe77A68818D9c75658D4c388996a9110d6B174870") as `0x${string}`,
+  tempoAddress: optional("TEMPO_ADDRESS", "0x5cDE13104be89E7d4f95001DD428fAd6F27E7a10") as `0x${string}`,
 
   /** XRP/USD block-latency feed. */
   xrpUsdFeedId: optional(
