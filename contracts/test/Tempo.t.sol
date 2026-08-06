@@ -24,6 +24,7 @@ contract TempoTest is Test {
     MockAdapter vaultAdapter;
     MockAdapter redeemAdapter;
     MockAdapter withdrawAdapter;
+    MockAdapter swapAdapter;
 
     address user = makeAddr("personalAccount");
     address keeper = makeAddr("keeper");
@@ -39,10 +40,11 @@ contract TempoTest is Test {
         // Tempo's adapters are immutable, and the adapters only accept calls
         // from Tempo — so the address has to be known before either exists.
         // Predicting it keeps both sides immutable with no initializer.
-        address predictedTempo = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 3);
+        address predictedTempo = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 4);
         vaultAdapter = new MockAdapter(IERC20(address(fxrp)), predictedTempo);
         redeemAdapter = new MockAdapter(IERC20(address(fxrp)), predictedTempo);
         withdrawAdapter = new MockAdapter(IERC20(address(fxrp)), predictedTempo);
+        swapAdapter = new MockAdapter(IERC20(address(fxrp)), predictedTempo);
         tempo = new Tempo(
             IERC20(address(fxrp)),
             IFtsoV2(address(ftso)),
@@ -50,7 +52,8 @@ contract TempoTest is Test {
             MAX_PRICE_AGE,
             IActionAdapter(address(vaultAdapter)),
             IActionAdapter(address(redeemAdapter)),
-            IActionAdapter(address(withdrawAdapter))
+            IActionAdapter(address(withdrawAdapter)),
+            IActionAdapter(address(swapAdapter))
         );
         assertEq(address(tempo), predictedTempo, "address prediction drifted");
 

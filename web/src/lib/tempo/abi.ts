@@ -37,6 +37,11 @@ export const tempoAbi = [
         "name": "_vaultWithdrawAdapter",
         "type": "address",
         "internalType": "contract IActionAdapter"
+      },
+      {
+        "name": "_swapAdapter",
+        "type": "address",
+        "internalType": "contract IActionAdapter"
       }
     ],
     "stateMutability": "nonpayable"
@@ -348,6 +353,19 @@ export const tempoAbi = [
   {
     "type": "function",
     "name": "redeemAdapter",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IActionAdapter"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "swapAdapter",
     "inputs": [],
     "outputs": [
       {

@@ -49,16 +49,37 @@ Deployed 2026-08-04 via `contracts/script/Deploy.s.sol`.
 
 | Contract | Address |
 |---|---|
-| `Tempo` | `0x21836CB02bCfdDaa124821C2e55f948b287A674e` |
-| `VaultDepositAdapter` | `0x02791461376ccb178E9e144F1f291f3804FE2530` |
-| `RedeemAdapter` | `0x232Db0590c7145A4F45A596a5aF0f439E4E25ab9` |
-| `VaultWithdrawAdapter` | `0xef97B90758dAe2543acAca2D5fE1aAB787e4121B` |
+| `Tempo` | `0xe77A68818D9c75658D4c388996a9110d6B174870` |
+| `VaultDepositAdapter` | `0x332dA3E974DfAB81Ef1B1408B80989E5172046Fb` |
+| `VaultWithdrawAdapter` | `0xb2cf8B3eAC04AC80c22Fbf3FBc7502E5E32499Bb` |
+| `RedeemAdapter` | `0x3FA90083499BaF1229d65BD5B6E24A52CEF70176` |
+| `SwapAdapter` | `0x272E15fAc305a4dCdE8F5a9dEAac84288BC2A56C` |
 
-Explorer: `https://coston2-explorer.flare.network/address/0x21836CB02bCfdDaa124821C2e55f948b287A674e`
+Explorer: `https://coston2-explorer.flare.network/address/0xe77A68818D9c75658D4c388996a9110d6B174870`
 
-> Supersedes the 6 August deployment (`Tempo 0xdf0D7Be9…`), which had no
-> `VAULT_WITHDRAW` action. Its orders are orphaned by design: the constructor
-> changed, so the adapters could not be repointed.
+> Each redeployment orphans the previous one's orders. The constructor gains a
+> parameter every time an action is added, so the adapters cannot be repointed
+> at a new Tempo — that immutability is the point.
+
+### The swap action is deployed but unusable on testnet
+
+`SwapAdapter` is wired in, and it refuses. SparkDEX has no testnet deployment —
+verified by reading code size at its published addresses on Coston2, Coston and
+mainnet — so the adapter rejects `SWAP_TO_STABLE` orders at **creation** with
+`SwapVenueUnavailable` rather than accepting them and failing weeks later at the
+moment the user was relying on it.
+
+It is proven against the real thing instead. `test/SwapMainnetFork.t.sol` runs
+the adapter on a Flare mainnet fork: real FXRP, real USDT0, the real 0.05% pool
+with ~4e11 liquidity, real fills. Nothing mocked.
+
+```bash
+FLARE_RPC_URL=https://flare-api.flare.network/ext/C/rpc forge test --match-contract SwapMainnetFork
+```
+
+The alternative was deploying a toy AMM to Coston2 and calling it a venue. A
+swap against our own liquidity in our own pool would have demonstrated nothing
+except that we can write an AMM.
 
 ### Vault withdrawals are two-phase
 

@@ -32,6 +32,7 @@ contract VaultRoundTripTest is Test {
     VaultDepositAdapter depositAdapter;
     VaultWithdrawAdapter withdrawAdapter;
     MockAdapter redeemAdapter;
+    MockAdapter swapAdapter;
 
     address user = makeAddr("personalAccount");
     address keeper = makeAddr("keeper");
@@ -46,10 +47,11 @@ contract VaultRoundTripTest is Test {
         address[] memory vaults = new address[](1);
         vaults[0] = address(vault);
 
-        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 3);
+        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 4);
         depositAdapter = new VaultDepositAdapter(IERC20(address(fxrp)), predicted, vaults);
         redeemAdapter = new MockAdapter(IERC20(address(fxrp)), predicted);
         withdrawAdapter = new VaultWithdrawAdapter(IERC20(address(fxrp)), predicted, vaults);
+        swapAdapter = new MockAdapter(IERC20(address(fxrp)), predicted);
         tempo = new Tempo(
             IERC20(address(fxrp)),
             IFtsoV2(address(ftso)),
@@ -57,7 +59,8 @@ contract VaultRoundTripTest is Test {
             MAX_PRICE_AGE,
             IActionAdapter(address(depositAdapter)),
             IActionAdapter(address(redeemAdapter)),
-            IActionAdapter(address(withdrawAdapter))
+            IActionAdapter(address(withdrawAdapter)),
+            IActionAdapter(address(swapAdapter))
         );
         assertEq(address(tempo), predicted);
 

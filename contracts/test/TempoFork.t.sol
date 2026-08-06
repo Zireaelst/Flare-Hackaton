@@ -11,6 +11,7 @@ import {IFtsoV2} from "../src/interfaces/IFtsoV2.sol";
 import {RedeemAdapter} from "../src/adapters/RedeemAdapter.sol";
 import {VaultDepositAdapter} from "../src/adapters/VaultDepositAdapter.sol";
 import {VaultWithdrawAdapter} from "../src/adapters/VaultWithdrawAdapter.sol";
+import {MockAdapter} from "./mocks/Mocks.sol";
 
 /// @notice Exercises Tempo against the real Coston2 FTSO, FXRP and vaults.
 /// @dev The unit suite proves the logic; this proves the integration — that the
@@ -41,6 +42,7 @@ contract TempoForkTest is Test {
     VaultDepositAdapter vaultDepositAdapter;
     RedeemAdapter redeemAdapter;
     VaultWithdrawAdapter vaultWithdrawAdapter;
+    MockAdapter swapAdapter;
 
     address user = PERSONAL_ACCOUNT;
     address keeper = makeAddr("keeper");
@@ -56,10 +58,12 @@ contract TempoForkTest is Test {
         address[] memory vaults = new address[](1);
         vaults[0] = VAULT;
 
-        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 3);
+        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 4);
         vaultDepositAdapter = new VaultDepositAdapter(IERC20(FXRP), predicted, vaults);
         redeemAdapter = new RedeemAdapter(IERC20(FXRP), IAssetManager(ASSET_MANAGER), predicted);
         vaultWithdrawAdapter = new VaultWithdrawAdapter(IERC20(FXRP), predicted, vaults);
+        // SparkDEX has no Coston2 deployment, so the swap slot is filled but unused here.
+        swapAdapter = new MockAdapter(IERC20(FXRP), predicted);
         tempo = new Tempo(
             IERC20(FXRP),
             IFtsoV2(FTSOV2),
@@ -67,7 +71,8 @@ contract TempoForkTest is Test {
             MAX_PRICE_AGE,
             IActionAdapter(address(vaultDepositAdapter)),
             IActionAdapter(address(redeemAdapter)),
-            IActionAdapter(address(vaultWithdrawAdapter))
+            IActionAdapter(address(vaultWithdrawAdapter)),
+            IActionAdapter(address(swapAdapter))
         );
         assertEq(address(tempo), predicted);
     }

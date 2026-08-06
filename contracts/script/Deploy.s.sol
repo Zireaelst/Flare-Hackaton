@@ -11,6 +11,8 @@ import {IFtsoV2} from "../src/interfaces/IFtsoV2.sol";
 import {RedeemAdapter} from "../src/adapters/RedeemAdapter.sol";
 import {VaultDepositAdapter} from "../src/adapters/VaultDepositAdapter.sol";
 import {VaultWithdrawAdapter} from "../src/adapters/VaultWithdrawAdapter.sol";
+import {SwapAdapter} from "../src/adapters/SwapAdapter.sol";
+import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 
 /// @notice Deploys Tempo and its two adapters to Coston2.
 /// @dev Addresses are read from the environment rather than hardcoded so the
@@ -41,11 +43,25 @@ contract Deploy is Script {
 
         vm.startBroadcast(deployerKey);
 
-        address predictedTempo = vm.computeCreateAddress(deployer, vm.getNonce(deployer) + 3);
+        address predictedTempo = vm.computeCreateAddress(deployer, vm.getNonce(deployer) + 4);
 
         VaultDepositAdapter vaultDepositAdapter = new VaultDepositAdapter(IERC20(fxrp), predictedTempo, vaults);
         RedeemAdapter redeemAdapter = new RedeemAdapter(IERC20(fxrp), IAssetManager(assetManager), predictedTempo);
         VaultWithdrawAdapter vaultWithdrawAdapter = new VaultWithdrawAdapter(IERC20(fxrp), predictedTempo, vaults);
+        // Deployed on every network; only usable where SparkDEX is. The adapter
+        // rejects orders at creation when the router has no code, so a testnet
+        // deployment refuses swaps rather than accepting them and failing later.
+        SwapAdapter swapAdapter = new SwapAdapter(
+            IERC20(fxrp),
+            IERC20(vm.envAddress("STABLE_TOKEN")),
+            ISwapRouter(vm.envAddress("SWAP_ROUTER")),
+            IFtsoV2(ftsoV2),
+            predictedTempo,
+            feedId,
+            uint24(vm.envUint("SWAP_POOL_FEE")),
+            maxPriceAge,
+            uint16(vm.envUint("SWAP_MAX_SLIPPAGE_BIPS"))
+        );
         Tempo tempo = new Tempo(
             IERC20(fxrp),
             IFtsoV2(ftsoV2),
@@ -53,7 +69,8 @@ contract Deploy is Script {
             maxPriceAge,
             IActionAdapter(address(vaultDepositAdapter)),
             IActionAdapter(address(redeemAdapter)),
-            IActionAdapter(address(vaultWithdrawAdapter))
+            IActionAdapter(address(vaultWithdrawAdapter)),
+            IActionAdapter(address(swapAdapter))
         );
 
         vm.stopBroadcast();
@@ -64,5 +81,6 @@ contract Deploy is Script {
         console.log("VaultDepositAdapter ", address(vaultDepositAdapter));
         console.log("RedeemAdapter       ", address(redeemAdapter));
         console.log("VaultWithdrawAdapter", address(vaultWithdrawAdapter));
+        console.log("SwapAdapter         ", address(swapAdapter));
     }
 }

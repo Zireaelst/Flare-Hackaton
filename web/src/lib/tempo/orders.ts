@@ -2,7 +2,13 @@ import { encodeFunctionData, erc20Abi, type Address } from "viem";
 import { tempoAbi } from "./abi";
 
 export const OrderKind = { SCHEDULE: 0, TAKE_PROFIT: 1, STOP_LOSS: 2 } as const;
-export const ActionKind = { VAULT_DEPOSIT: 0, REDEEM_TO_XRPL: 1, VAULT_WITHDRAW: 2 } as const;
+export const ActionKind = {
+  VAULT_DEPOSIT: 0,
+  REDEEM_TO_XRPL: 1,
+  VAULT_WITHDRAW: 2,
+  /** SparkDEX is mainnet-only; the adapter rejects these at creation on testnet. */
+  SWAP_TO_STABLE: 3,
+} as const;
 
 /**
  * `amountPerSlice` meaning "whatever the balance is when this fires".

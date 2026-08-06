@@ -41,7 +41,8 @@ contract Tempo is ReentrancyGuard {
     enum ActionKind {
         VAULT_DEPOSIT,
         REDEEM_TO_XRPL,
-        VAULT_WITHDRAW
+        VAULT_WITHDRAW,
+        SWAP_TO_STABLE
     }
 
     /// @notice `amountPerSlice` sentinel meaning "whatever the balance is when this fires".
@@ -146,6 +147,7 @@ contract Tempo is ReentrancyGuard {
     IActionAdapter public immutable vaultDepositAdapter;
     IActionAdapter public immutable redeemAdapter;
     IActionAdapter public immutable vaultWithdrawAdapter;
+    IActionAdapter public immutable swapAdapter;
 
     // --- Storage ------------------------------------------------------------
 
@@ -160,7 +162,8 @@ contract Tempo is ReentrancyGuard {
         uint64 _maxPriceAge,
         IActionAdapter _vaultDepositAdapter,
         IActionAdapter _redeemAdapter,
-        IActionAdapter _vaultWithdrawAdapter
+        IActionAdapter _vaultWithdrawAdapter,
+        IActionAdapter _swapAdapter
     ) {
         fxrp = _fxrp;
         ftsoV2 = _ftsoV2;
@@ -169,6 +172,7 @@ contract Tempo is ReentrancyGuard {
         vaultDepositAdapter = _vaultDepositAdapter;
         redeemAdapter = _redeemAdapter;
         vaultWithdrawAdapter = _vaultWithdrawAdapter;
+        swapAdapter = _swapAdapter;
     }
 
     // --- Order lifecycle ----------------------------------------------------
@@ -203,8 +207,10 @@ contract Tempo is ReentrancyGuard {
         IActionAdapter adapter = _adapterFor(params.action);
         if (params.action == ActionKind.REDEEM_TO_XRPL) {
             if (params.xrplAddress.length == 0) revert InvalidXrplAddress();
-        } else if (params.vault == address(0)) {
-            // Both vault actions need somewhere to go.
+        } else if (
+            params.action != ActionKind.SWAP_TO_STABLE && params.vault == address(0)
+        ) {
+            // Both vault actions need somewhere to go. A swap does not.
             revert InvalidVault();
         }
         // Surfaces adapter-specific constraints (e.g. FAssets lot alignment)
@@ -373,6 +379,7 @@ contract Tempo is ReentrancyGuard {
     function _adapterFor(ActionKind action) internal view returns (IActionAdapter) {
         if (action == ActionKind.VAULT_DEPOSIT) return vaultDepositAdapter;
         if (action == ActionKind.VAULT_WITHDRAW) return vaultWithdrawAdapter;
+        if (action == ActionKind.SWAP_TO_STABLE) return swapAdapter;
         return redeemAdapter;
     }
 

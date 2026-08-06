@@ -88,10 +88,11 @@ and a real yield vault.
 
 | Contract | Address |
 |---|---|
-| `Tempo` | [`0x21836CB02bCfdDaa124821C2e55f948b287A674e`](https://coston2-explorer.flare.network/address/0x21836CB02bCfdDaa124821C2e55f948b287A674e) |
-| `VaultDepositAdapter` | [`0x02791461376ccb178E9e144F1f291f3804FE2530`](https://coston2-explorer.flare.network/address/0x02791461376ccb178E9e144F1f291f3804FE2530) |
-| `VaultWithdrawAdapter` | [`0xef97B90758dAe2543acAca2D5fE1aAB787e4121B`](https://coston2-explorer.flare.network/address/0xef97B90758dAe2543acAca2D5fE1aAB787e4121B) |
-| `RedeemAdapter` | [`0x232Db0590c7145A4F45A596a5aF0f439E4E25ab9`](https://coston2-explorer.flare.network/address/0x232Db0590c7145A4F45A596a5aF0f439E4E25ab9) |
+| `Tempo` | [`0xe77A68818D9c75658D4c388996a9110d6B174870`](https://coston2-explorer.flare.network/address/0xe77A68818D9c75658D4c388996a9110d6B174870) |
+| `VaultDepositAdapter` | [`0x332dA3E974DfAB81Ef1B1408B80989E5172046Fb`](https://coston2-explorer.flare.network/address/0x332dA3E974DfAB81Ef1B1408B80989E5172046Fb) |
+| `VaultWithdrawAdapter` | [`0xb2cf8B3eAC04AC80c22Fbf3FBc7502E5E32499Bb`](https://coston2-explorer.flare.network/address/0xb2cf8B3eAC04AC80c22Fbf3FBc7502E5E32499Bb) |
+| `RedeemAdapter` | [`0x3FA90083499BaF1229d65BD5B6E24A52CEF70176`](https://coston2-explorer.flare.network/address/0x3FA90083499BaF1229d65BD5B6E24A52CEF70176) |
+| `SwapAdapter` | [`0x272E15fAc305a4dCdE8F5a9dEAac84288BC2A56C`](https://coston2-explorer.flare.network/address/0x272E15fAc305a4dCdE8F5a9dEAac84288BC2A56C) |
 
 ### Flare contracts Tempo builds on
 
@@ -105,7 +106,7 @@ and a real yield vault.
 
 | | |
 |---|---|
-| Tests | 17 unit + 5 fork, all passing |
+| Tests | 31, all passing — 23 unit, 5 against live Coston2, 3 against Flare mainnet |
 | Day 0 gate | [Flare tx `0xa7649a73…`](https://coston2-explorer.flare.network/tx/0xa7649a730cd3e6c24f9f763a16e41618cb43c8f5df5a0dd36577dd84553bc1ca) — one XRPL payment minted FXRP **and** ran a user operation, atomically |
 | First live order | [Flare tx `0x5170eca5…`](https://coston2-explorer.flare.network/tx/0x5170eca5681c235bddf200c5900d4fcc6eefc8201cc0a38e2453e7823bd2aa90) — one XRPL payment created a 2-slice DCA order |
 | First execution | [Flare tx `0x70e08dbc…`](https://coston2-explorer.flare.network/tx/0x70e08dbc42c497d2255f1f0070258f991524e1c383440cb1c3a888c983dc136a) — the keeper deposited slice 1 into a live vault |
