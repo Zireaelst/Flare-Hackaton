@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createOrder } from "@/lib/relayer/createOrder";
-import { ActionKind, OrderKind, fxrpToUba, usdToWei, ZERO_ADDRESS, type OrderParams } from "@/lib/tempo/orders";
+import {
+  ActionKind,
+  OrderKind,
+  WHOLE_BALANCE,
+  fxrpToUba,
+  usdToWei,
+  ZERO_ADDRESS,
+  type OrderParams,
+} from "@/lib/tempo/orders";
 
 export const maxDuration = 60;
 
@@ -14,6 +22,8 @@ type Body = {
   intervalSeconds: number;
   priceTarget?: number;
   expiryDays: number;
+  /** Optional: unwind the position when XRP/USD falls to this price. */
+  exitBelow?: number;
   /** Dev-only: force a stuck mint to exercise recovery. See createOrder. */
   debugNonceOffset?: number;
 };
@@ -68,13 +78,31 @@ export async function POST(request: Request) {
       expiry: BigInt(Math.floor(Date.now() / 1000) + body.expiryDays * 86_400),
     };
 
+    // The exit rides in the same payment as the plan it protects. It takes
+    // WHOLE_BALANCE because at this moment the plan has not run and there are
+    // no shares to count.
+    const exit: OrderParams | undefined =
+      body.exitBelow && body.action === "VAULT_DEPOSIT"
+        ? {
+            kind: OrderKind.STOP_LOSS,
+            action: ActionKind.VAULT_WITHDRAW,
+            vault: body.vault! as `0x${string}`,
+            xrplAddress: "0x",
+            amountPerSlice: WHOLE_BALANCE,
+            slices: 1,
+            intervalSeconds: 0n,
+            priceTarget: usdToWei(body.exitBelow),
+            expiry: params.expiry,
+          }
+        : undefined;
+
     // Never reachable in production: the flag is not set there.
     const nonceOffset =
       process.env.ALLOW_DEBUG_ENDPOINTS === "1" && body.debugNonceOffset
         ? BigInt(body.debugNonceOffset)
         : 0n;
 
-    return NextResponse.json(await createOrder(params, nonceOffset));
+    return NextResponse.json(await createOrder(params, exit, nonceOffset));
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create the order" },

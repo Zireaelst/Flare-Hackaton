@@ -6,6 +6,7 @@ import { RELAY_STEPS, STATUS_LABEL } from "@/lib/relayer/types";
 import type { OrderView } from "@/lib/tempo/read";
 import {
   ACTION_LABEL,
+  WHOLE_BALANCE_STR,
   EXPLORER,
   ORDER_KIND_LABEL,
   VAULTS,
@@ -34,6 +35,8 @@ type Form = {
   slices: number;
   intervalSeconds: number;
   priceTarget: number;
+  exitBelow: number;
+  protect: boolean;
 };
 
 export function DemoConsole() {
@@ -54,6 +57,8 @@ export function DemoConsole() {
     slices: 2,
     intervalSeconds: 60,
     priceTarget: 1,
+    exitBelow: 0.9,
+    protect: true,
   });
 
   const refresh = useCallback(async () => {
@@ -125,7 +130,13 @@ export function DemoConsole() {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, expiryDays: 30 }),
+        body: JSON.stringify({
+          ...form,
+          expiryDays: 30,
+          // Only a vault plan has something to unwind.
+          exitBelow:
+            form.protect && form.action === "VAULT_DEPOSIT" ? form.exitBelow : undefined,
+        }),
       });
       const data = await response.json();
       if (data.error) {
@@ -281,6 +292,35 @@ export function DemoConsole() {
                   <option value={604800}>every week</option>
                 </select>
               </Field>
+            )}
+
+            {form.action === "VAULT_DEPOSIT" && (
+              <div className="rounded-xl border border-line bg-surface-2 p-4">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.protect}
+                    onChange={(event) => setForm({ ...form, protect: event.target.checked })}
+                    className="mt-0.5 accent-[var(--accent)]"
+                  />
+                  <span className="text-xs leading-relaxed">
+                    <span className="font-medium">Protect it with an exit</span>
+                    <span className="mt-1 block text-muted">
+                      Pull the whole position out of the vault if XRP falls this far. Set up in the
+                      same payment, before a single share exists.
+                    </span>
+                  </span>
+                </label>
+                {form.protect && (
+                  <div className="mt-3">
+                    <NumberInput
+                      value={form.exitBelow}
+                      step={0.01}
+                      onChange={(exitBelow) => setForm({ ...form, exitBelow })}
+                    />
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="rounded-xl border border-line bg-surface-2 p-4 text-xs leading-relaxed text-muted">
@@ -470,7 +510,14 @@ function OrderRow({ order }: { order: OrderView }) {
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-4">
-        <Cell label="Per slice" value={`${formatFxrp(order.amountPerSlice)} FXRP`} />
+        <Cell
+          label={order.action === 2 ? "Exits" : "Per slice"}
+          value={
+            order.amountPerSlice === WHOLE_BALANCE_STR
+              ? "everything"
+              : `${formatFxrp(order.amountPerSlice)} FXRP`
+          }
+        />
         <Cell label="Progress" value={`${order.slicesExecuted}/${order.slices}`} />
         {order.kind === 0 ? (
           <Cell label="Interval" value={formatInterval(order.intervalSeconds)} />

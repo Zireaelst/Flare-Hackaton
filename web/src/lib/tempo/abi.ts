@@ -1,5 +1,4 @@
 // Generated from contracts/out/Tempo.sol/Tempo.json — do not edit by hand.
-// Regenerate with: npm run abi
 export const tempoAbi = [
   {
     "type": "constructor",
@@ -33,9 +32,27 @@ export const tempoAbi = [
         "name": "_redeemAdapter",
         "type": "address",
         "internalType": "contract IActionAdapter"
+      },
+      {
+        "name": "_vaultWithdrawAdapter",
+        "type": "address",
+        "internalType": "contract IActionAdapter"
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "WHOLE_BALANCE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -355,6 +372,19 @@ export const tempoAbi = [
     "stateMutability": "view"
   },
   {
+    "type": "function",
+    "name": "vaultWithdrawAdapter",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IActionAdapter"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
     "type": "event",
     "name": "OrderCancelledEvent",
     "inputs": [
@@ -500,6 +530,11 @@ export const tempoAbi = [
   },
   {
     "type": "error",
+    "name": "NothingToMove",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "OrderCancelled",
     "inputs": []
   },
@@ -542,6 +577,11 @@ export const tempoAbi = [
   {
     "type": "error",
     "name": "TooEarly",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "WholeBalanceNeedsOneSlice",
     "inputs": []
   }
 ] as const;

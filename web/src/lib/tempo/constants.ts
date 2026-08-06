@@ -14,8 +14,11 @@ export const VAULTS = [
   { address: "0xc90d6847747b85d1fa2e07859869fb9fb72c0361", symbol: "stXRP" },
 ] as const;
 
+/** `Tempo.WHOLE_BALANCE` as it comes back from a contract read. */
+export const WHOLE_BALANCE_STR = ((1n << 256n) - 1n).toString();
+
 export const ORDER_KIND_LABEL = ["Schedule", "Take profit", "Stop loss"] as const;
-export const ACTION_LABEL = ["Vault deposit", "Redeem to XRPL"] as const;
+export const ACTION_LABEL = ["Vault deposit", "Redeem to XRPL", "Exit vault"] as const;
 
 export function shortAddress(address: string, size = 6): string {
   if (address.length <= size * 2 + 2) return address;

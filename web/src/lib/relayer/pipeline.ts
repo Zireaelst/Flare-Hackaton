@@ -403,16 +403,27 @@ async function advanceRecovery(job: RelayJob): Promise<RelayJob> {
 
   const assetManager = await getAssetManagerFxrp();
 
-  // Recovery payments carry no user operation, so `_data` is empty.
-  const hash = await walletClient().writeContract({
-    account: relayerAccount(),
-    chain: null,
-    address: assetManager,
-    abi: directMintingAbi,
-    functionName: "executeDirectMintingWithData",
-    args: [proof, "0x"],
-    value: 0n,
-  });
+  let hash: `0x${string}`;
+  try {
+    // Recovery payments carry no user operation, so `_data` is empty.
+    hash = await walletClient().writeContract({
+      account: relayerAccount(),
+      chain: null,
+      address: assetManager,
+      abi: directMintingAbi,
+      functionName: "executeDirectMintingWithData",
+      args: [proof, "0x"],
+      value: 0n,
+    });
+  } catch (error) {
+    // Flare runs its own executor against the Core Vault, so ours is not the
+    // only one watching. Losing that race means the recovery payment has
+    // already been applied and the skip flag is already set -- exactly the
+    // outcome we wanted, reached by someone else. Treating it as a failure
+    // here would abandon a payment that is in fact fine.
+    if (!isPaymentAlreadyConfirmed(error)) throw error;
+    return advanceAfterRecovery(job, { ...updated, landed: true });
+  }
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status === "reverted") {
@@ -444,15 +455,18 @@ async function advanceRecovery(job: RelayJob): Promise<RelayJob> {
     };
   }
 
-  const landed: RecoveryLeg = { ...updated, flareTxHash: hash, landed: true };
+  return advanceAfterRecovery(job, { ...updated, flareTxHash: hash, landed: true });
+}
 
+/** Where a relay goes once its recovery payment has taken effect. */
+function advanceAfterRecovery(job: RelayJob, recovery: RecoveryLeg): RelayJob {
   if (recovery.kind === "fast_forward") {
     // Nothing left to re-submit: the FXRP was already minted, and the account
     // is now usable again for future orders.
     return {
       ...job,
       status: "done",
-      recovery: landed,
+      recovery,
       message: "Your FXRP was recovered and your account is unblocked",
     };
   }
@@ -460,7 +474,7 @@ async function advanceRecovery(job: RelayJob): Promise<RelayJob> {
   return {
     ...job,
     status: "retrying",
-    recovery: landed,
+    recovery,
     message: "Recovered — retrying the mint",
   };
 }
