@@ -78,20 +78,8 @@ export function buildOrderCalls({
   /** When false the two orders are independent and the plan keeps running. */
   linkExit?: boolean;
 }) {
-  const total = params.amountPerSlice * BigInt(params.slices);
-
   const calls = [
-    {
-      target: fxrp,
-      value: 0n,
-      data: encodeFunctionData({
-        abi: erc20Abi,
-        functionName: "approve",
-        // Exactly the order's total, never unlimited: a standing order should
-        // not be able to authorize more than the user agreed to.
-        args: [tempo, total],
-      }),
-    },
+    approvalFor({ fxrp, tempo, params }),
     {
       target: tempo,
       value: 0n,
@@ -101,19 +89,11 @@ export function buildOrderCalls({
 
   if (!exit) return calls;
 
-  const shareApproval = {
-    target: exit.vault,
-    value: 0n,
-    data: encodeFunctionData({
-      abi: erc20Abi,
-      functionName: "approve" as const,
-      // Unlimited, unavoidably: the shares this will spend do not exist yet,
-      // and their count keeps changing as the plan runs and yield accrues.
-      // The allowance is only reachable through an order the user wrote, and
-      // only once its trigger is genuinely satisfied on-chain.
-      args: [tempo, WHOLE_BALANCE] as const,
-    }),
-  };
+  // Unlimited, unavoidably: the shares this will spend do not exist yet, and
+  // their count keeps changing as the plan runs and yield accrues. The
+  // allowance is only reachable through an order the user wrote, and only once
+  // its trigger is genuinely satisfied on-chain.
+  const shareApproval = approvalFor({ fxrp, tempo, params: exit });
 
   if (!linkExit) {
     // Two independent orders: the exit unwinds the position and the schedule
@@ -142,6 +122,44 @@ export function buildOrderCalls({
   });
 
   return calls;
+}
+
+/**
+ * The allowance an order needs, on the token it will actually spend.
+ *
+ * Not always FXRP: leaving a vault spends the user's shares. Getting this wrong
+ * does not fail loudly — it approves a token the order never touches, and the
+ * first execution reverts for want of an allowance on a different one.
+ *
+ * The amount is exact wherever it can be. It cannot be for a vault exit: the
+ * shares do not exist yet when the order is written, and their count moves with
+ * yield.
+ */
+function approvalFor({
+  fxrp,
+  tempo,
+  params,
+}: {
+  fxrp: Address;
+  tempo: Address;
+  params: OrderParams;
+}) {
+  const isVaultExit = params.action === ActionKind.VAULT_WITHDRAW;
+  const token = isVaultExit ? params.vault : fxrp;
+  const amount =
+    isVaultExit || params.amountPerSlice === WHOLE_BALANCE
+      ? WHOLE_BALANCE
+      : params.amountPerSlice * BigInt(params.slices);
+
+  return {
+    target: token,
+    value: 0n,
+    data: encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "approve" as const,
+      args: [tempo, amount] as const,
+    }),
+  };
 }
 
 /** Human-readable form of Tempo's NotExecutableReason enum. */

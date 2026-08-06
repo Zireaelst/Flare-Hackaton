@@ -113,7 +113,11 @@ and a real yield vault.
 | | |
 |---|---|
 | Tests | 35, all passing — 27 unit, 5 against live Coston2, 3 against Flare mainnet |
-| Linked exit | [Flare tx](https://coston2-explorer.flare.network/address/0x5B281A91b54bd2E43f9f39A5AEF0CC7BbF15Fb6D) — an exit unwound the position and disarmed the plan behind it |
+| Linked exit | An exit unwound the position and disarmed the plan behind it, on chain |
+| Full round trip | XRP → FXRP → vault → exit → claim → redemption → **XRP back on the XRP Ledger**, every leg driven by one payment and the keeper |
+
+Every action has been exercised on Coston2 except `SWAP_TO_STABLE`, which SparkDEX does not
+deploy to any testnet; that one is proven on a Flare mainnet fork instead.
 | Day 0 gate | [Flare tx `0xa7649a73…`](https://coston2-explorer.flare.network/tx/0xa7649a730cd3e6c24f9f763a16e41618cb43c8f5df5a0dd36577dd84553bc1ca) — one XRPL payment minted FXRP **and** ran a user operation, atomically |
 | First live order | [Flare tx `0x5170eca5…`](https://coston2-explorer.flare.network/tx/0x5170eca5681c235bddf200c5900d4fcc6eefc8201cc0a38e2453e7823bd2aa90) — one XRPL payment created a 2-slice DCA order |
 | First execution | [Flare tx `0x70e08dbc…`](https://coston2-explorer.flare.network/tx/0x70e08dbc42c497d2255f1f0070258f991524e1c383440cb1c3a888c983dc136a) — the keeper deposited slice 1 into a live vault |

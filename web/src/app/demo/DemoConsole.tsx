@@ -29,7 +29,7 @@ type ChainState = {
 
 type Form = {
   kind: "SCHEDULE" | "TAKE_PROFIT" | "STOP_LOSS";
-  action: "VAULT_DEPOSIT" | "REDEEM_TO_XRPL";
+  action: "VAULT_DEPOSIT" | "VAULT_WITHDRAW" | "REDEEM_TO_XRPL" | "SWAP_TO_STABLE";
   vault: string;
   amountPerSlice: number;
   slices: number;
@@ -135,6 +135,11 @@ export function DemoConsole() {
         body: JSON.stringify({
           ...form,
           expiryDays: 30,
+          // Redemption goes back to the wallet that paid; the demo signs with
+          // its own, so that is the address on the other end.
+          xrplAddress: form.action === "REDEEM_TO_XRPL" ? state?.demoXrplAddress : undefined,
+          // An exit takes the position, not a fixed number of shares.
+          wholeBalance: form.action === "VAULT_WITHDRAW",
           // Only a vault plan has something to unwind.
           exitBelow:
             form.protect && form.action === "VAULT_DEPOSIT" ? form.exitBelow : undefined,
@@ -252,15 +257,36 @@ export function DemoConsole() {
             <Field label="Action">
               <Segmented
                 options={[
-                  { value: "VAULT_DEPOSIT", label: "Vault deposit" },
-                  { value: "REDEEM_TO_XRPL", label: "Redeem to XRPL" },
+                  { value: "VAULT_DEPOSIT", label: "Deposit" },
+                  { value: "VAULT_WITHDRAW", label: "Exit vault" },
+                  { value: "REDEEM_TO_XRPL", label: "To XRPL" },
+                  { value: "SWAP_TO_STABLE", label: "To stable" },
                 ]}
                 value={form.action}
                 onChange={(action) => setForm({ ...form, action: action as Form["action"] })}
               />
             </Field>
 
-            {form.action === "VAULT_DEPOSIT" && (
+            {form.action === "SWAP_TO_STABLE" && (
+              <p className="rounded-xl border border-line bg-surface-2 p-4 text-xs leading-relaxed text-muted">
+                <span className="text-accent">Not available on testnet.</span> SparkDEX has no
+                Coston2 deployment, so the adapter refuses this at order creation rather than
+                accepting it and failing later. It is proven against the real mainnet pool in{" "}
+                <span className="font-mono">SwapMainnetFork.t.sol</span>.
+              </p>
+            )}
+
+            {form.action === "REDEEM_TO_XRPL" && (
+              <p className="rounded-xl border border-line bg-surface-2 p-4 text-xs leading-relaxed text-muted">
+                Redeems FXRP back to{" "}
+                <span className="font-mono text-foreground">
+                  {state ? shortAddress(state.demoXrplAddress, 10) : "your XRPL address"}
+                </span>{" "}
+                through FAssets. The redemption queue will not accept less than 5 FXRP a slice.
+              </p>
+            )}
+
+            {(form.action === "VAULT_DEPOSIT" || form.action === "VAULT_WITHDRAW") && (
               <Field label="Vault">
                 <select
                   value={form.vault}
@@ -318,7 +344,7 @@ export function DemoConsole() {
               </Field>
             )}
 
-            {form.action === "VAULT_DEPOSIT" && (
+            {form.action === "VAULT_DEPOSIT" && form.kind === "SCHEDULE" && (
               <div className="rounded-xl border border-line bg-surface-2 p-4">
                 <label className="flex items-start gap-3">
                   <input
@@ -378,7 +404,11 @@ export function DemoConsole() {
 
             <button
               onClick={() => void submit()}
-              disabled={submitting || (!!job && job.status !== "done" && job.status !== "failed")}
+              disabled={
+                submitting ||
+                form.action === "SWAP_TO_STABLE" ||
+                (!!job && job.status !== "done" && job.status !== "failed")
+              }
               className="w-full rounded-full bg-accent py-3 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting ? "Sending the XRP payment…" : "Send one XRP payment"}
