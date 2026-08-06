@@ -6,7 +6,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Tempo} from "../src/Tempo.sol";
 import {IActionAdapter} from "../src/interfaces/IActionAdapter.sol";
 import {IFtsoV2} from "../src/interfaces/IFtsoV2.sol";
-import {MockAdapter, MockFtsoV2, MockFxrp} from "./mocks/Mocks.sol";
+import {MockAdapter, MockFtsoV2, MockFxrp, MockVault} from "./mocks/Mocks.sol";
 
 /// @notice Covers the six invariants Tempo's safety argument rests on.
 /// @dev Every test drives `execute` from an address that is *not* the order
@@ -23,6 +23,7 @@ contract TempoTest is Test {
     Tempo tempo;
     MockAdapter vaultAdapter;
     MockAdapter redeemAdapter;
+    MockAdapter withdrawAdapter;
 
     address user = makeAddr("personalAccount");
     address keeper = makeAddr("keeper");
@@ -38,16 +39,18 @@ contract TempoTest is Test {
         // Tempo's adapters are immutable, and the adapters only accept calls
         // from Tempo — so the address has to be known before either exists.
         // Predicting it keeps both sides immutable with no initializer.
-        address predictedTempo = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 2);
+        address predictedTempo = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 3);
         vaultAdapter = new MockAdapter(IERC20(address(fxrp)), predictedTempo);
         redeemAdapter = new MockAdapter(IERC20(address(fxrp)), predictedTempo);
+        withdrawAdapter = new MockAdapter(IERC20(address(fxrp)), predictedTempo);
         tempo = new Tempo(
             IERC20(address(fxrp)),
             IFtsoV2(address(ftso)),
             XRP_USD,
             MAX_PRICE_AGE,
             IActionAdapter(address(vaultAdapter)),
-            IActionAdapter(address(redeemAdapter))
+            IActionAdapter(address(redeemAdapter)),
+            IActionAdapter(address(withdrawAdapter))
         );
         assertEq(address(tempo), predictedTempo, "address prediction drifted");
 

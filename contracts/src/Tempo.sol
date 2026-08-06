@@ -36,10 +36,22 @@ contract Tempo is ReentrancyGuard {
         STOP_LOSS // fires when XRP/USD <= priceTarget
     }
 
+    /// @dev Appended to rather than reordered, so an existing deployment's
+    ///      stored orders keep meaning what they meant.
     enum ActionKind {
         VAULT_DEPOSIT,
-        REDEEM_TO_XRPL
+        REDEEM_TO_XRPL,
+        VAULT_WITHDRAW
     }
+
+    /// @notice `amountPerSlice` sentinel meaning "whatever the balance is when this fires".
+    /// @dev Exists for exits. An exit order is usually created in the same
+    ///      XRPL payment as the plan it protects, before a single share has
+    ///      been minted, so there is no number the user could put here. It also
+    ///      sidesteps the fact that vault shares accrue yield: a figure fixed
+    ///      weeks earlier would leave dust behind exactly when someone is
+    ///      trying to get all the way out.
+    uint256 public constant WHOLE_BALANCE = type(uint256).max;
 
     struct OrderParams {
         OrderKind kind;
@@ -102,6 +114,8 @@ contract Tempo is ReentrancyGuard {
     error InvalidPriceTarget();
     error InvalidVault();
     error InvalidXrplAddress();
+    error NothingToMove();
+    error WholeBalanceNeedsOneSlice();
 
     // --- Events -------------------------------------------------------------
 
@@ -131,6 +145,7 @@ contract Tempo is ReentrancyGuard {
 
     IActionAdapter public immutable vaultDepositAdapter;
     IActionAdapter public immutable redeemAdapter;
+    IActionAdapter public immutable vaultWithdrawAdapter;
 
     // --- Storage ------------------------------------------------------------
 
@@ -144,7 +159,8 @@ contract Tempo is ReentrancyGuard {
         bytes21 _priceFeedId,
         uint64 _maxPriceAge,
         IActionAdapter _vaultDepositAdapter,
-        IActionAdapter _redeemAdapter
+        IActionAdapter _redeemAdapter,
+        IActionAdapter _vaultWithdrawAdapter
     ) {
         fxrp = _fxrp;
         ftsoV2 = _ftsoV2;
@@ -152,6 +168,7 @@ contract Tempo is ReentrancyGuard {
         maxPriceAge = _maxPriceAge;
         vaultDepositAdapter = _vaultDepositAdapter;
         redeemAdapter = _redeemAdapter;
+        vaultWithdrawAdapter = _vaultWithdrawAdapter;
     }
 
     // --- Order lifecycle ----------------------------------------------------
@@ -166,6 +183,13 @@ contract Tempo is ReentrancyGuard {
         if (params.slices == 0) revert InvalidSlices();
         if (params.expiry <= block.timestamp) revert InvalidExpiry();
 
+        // "Everything" cannot be sliced: the first execution would take the
+        // whole balance and leave the remaining slices with nothing to move,
+        // which is a confusing way to spell `slices = 1`.
+        if (params.amountPerSlice == WHOLE_BALANCE && params.slices != 1) {
+            revert WholeBalanceNeedsOneSlice();
+        }
+
         // Every kind is gated by `nextExecutionAt`, so more than one slice
         // always needs a spacing — otherwise a keeper could drain all slices
         // of a price order inside a single block.
@@ -177,10 +201,11 @@ contract Tempo is ReentrancyGuard {
         }
 
         IActionAdapter adapter = _adapterFor(params.action);
-        if (params.action == ActionKind.VAULT_DEPOSIT) {
-            if (params.vault == address(0)) revert InvalidVault();
-        } else if (params.xrplAddress.length == 0) {
-            revert InvalidXrplAddress();
+        if (params.action == ActionKind.REDEEM_TO_XRPL) {
+            if (params.xrplAddress.length == 0) revert InvalidXrplAddress();
+        } else if (params.vault == address(0)) {
+            // Both vault actions need somewhere to go.
+            revert InvalidVault();
         }
         // Surfaces adapter-specific constraints (e.g. FAssets lot alignment)
         // now, while the user is still looking at the screen.
@@ -238,15 +263,19 @@ contract Tempo is ReentrancyGuard {
         order.slicesExecuted = slice;
         order.nextExecutionAt = uint64(block.timestamp) + order.intervalSeconds;
 
-        uint256 amount = order.amountPerSlice;
         IActionAdapter adapter = _adapterFor(order.action);
+        // Not always FXRP: a vault exit spends the user's shares.
+        IERC20 token = IERC20(adapter.inputToken(order.vault));
 
-        fxrp.safeTransferFrom(order.owner, address(this), amount);
-        fxrp.forceApprove(address(adapter), amount);
+        uint256 amount = _resolveAmount(order, token);
+        if (amount == 0) revert NothingToMove();
+
+        token.safeTransferFrom(order.owner, address(this), amount);
+        token.forceApprove(address(adapter), amount);
         adapter.perform(order.owner, order.vault, order.xrplAddress, amount);
         // Adapters are trusted code, but a partial pull would otherwise leave a
         // standing allowance behind. Revoke unconditionally.
-        fxrp.forceApprove(address(adapter), 0);
+        token.forceApprove(address(adapter), 0);
 
         emit OrderExecuted(orderId, order.owner, msg.sender, slice, amount, price);
     }
@@ -298,10 +327,16 @@ contract Tempo is ReentrancyGuard {
             if (!reached) return (false, NotExecutableReason.PRICE_NOT_REACHED);
         }
 
-        if (fxrp.allowance(order.owner, address(this)) < order.amountPerSlice) {
+        IERC20 token = IERC20(_adapterFor(order.action).inputToken(order.vault));
+        uint256 amount = _resolveAmount(order, token);
+
+        // A whole-balance exit with nothing in the vault is not "ready" — it
+        // would move zero and burn a slice.
+        if (amount == 0) return (false, NotExecutableReason.INSUFFICIENT_BALANCE);
+        if (token.allowance(order.owner, address(this)) < amount) {
             return (false, NotExecutableReason.INSUFFICIENT_ALLOWANCE);
         }
-        if (fxrp.balanceOf(order.owner) < order.amountPerSlice) {
+        if (token.balanceOf(order.owner) < amount) {
             return (false, NotExecutableReason.INSUFFICIENT_BALANCE);
         }
 
@@ -336,7 +371,17 @@ contract Tempo is ReentrancyGuard {
     // --- Internals ----------------------------------------------------------
 
     function _adapterFor(ActionKind action) internal view returns (IActionAdapter) {
-        return action == ActionKind.VAULT_DEPOSIT ? vaultDepositAdapter : redeemAdapter;
+        if (action == ActionKind.VAULT_DEPOSIT) return vaultDepositAdapter;
+        if (action == ActionKind.VAULT_WITHDRAW) return vaultWithdrawAdapter;
+        return redeemAdapter;
+    }
+
+    /// @notice What an order will actually move on its next execution.
+    /// @dev Resolves the `WHOLE_BALANCE` sentinel against the owner's current
+    ///      balance, so callers and views agree on the number.
+    function _resolveAmount(Order storage order, IERC20 token) internal view returns (uint256) {
+        if (order.amountPerSlice != WHOLE_BALANCE) return order.amountPerSlice;
+        return token.balanceOf(order.owner);
     }
 
     function _currentPrice() internal view returns (uint256) {

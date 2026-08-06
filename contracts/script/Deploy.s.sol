@@ -10,6 +10,7 @@ import {IERC4626Minimal} from "../src/interfaces/IERC4626Minimal.sol";
 import {IFtsoV2} from "../src/interfaces/IFtsoV2.sol";
 import {RedeemAdapter} from "../src/adapters/RedeemAdapter.sol";
 import {VaultDepositAdapter} from "../src/adapters/VaultDepositAdapter.sol";
+import {VaultWithdrawAdapter} from "../src/adapters/VaultWithdrawAdapter.sol";
 
 /// @notice Deploys Tempo and its two adapters to Coston2.
 /// @dev Addresses are read from the environment rather than hardcoded so the
@@ -40,17 +41,19 @@ contract Deploy is Script {
 
         vm.startBroadcast(deployerKey);
 
-        address predictedTempo = vm.computeCreateAddress(deployer, vm.getNonce(deployer) + 2);
+        address predictedTempo = vm.computeCreateAddress(deployer, vm.getNonce(deployer) + 3);
 
         VaultDepositAdapter vaultDepositAdapter = new VaultDepositAdapter(IERC20(fxrp), predictedTempo, vaults);
         RedeemAdapter redeemAdapter = new RedeemAdapter(IERC20(fxrp), IAssetManager(assetManager), predictedTempo);
+        VaultWithdrawAdapter vaultWithdrawAdapter = new VaultWithdrawAdapter(IERC20(fxrp), predictedTempo, vaults);
         Tempo tempo = new Tempo(
             IERC20(fxrp),
             IFtsoV2(ftsoV2),
             feedId,
             maxPriceAge,
             IActionAdapter(address(vaultDepositAdapter)),
-            IActionAdapter(address(redeemAdapter))
+            IActionAdapter(address(redeemAdapter)),
+            IActionAdapter(address(vaultWithdrawAdapter))
         );
 
         vm.stopBroadcast();
@@ -60,5 +63,6 @@ contract Deploy is Script {
         console.log("Tempo               ", address(tempo));
         console.log("VaultDepositAdapter ", address(vaultDepositAdapter));
         console.log("RedeemAdapter       ", address(redeemAdapter));
+        console.log("VaultWithdrawAdapter", address(vaultWithdrawAdapter));
     }
 }

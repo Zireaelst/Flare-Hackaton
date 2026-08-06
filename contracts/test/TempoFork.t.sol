@@ -10,6 +10,7 @@ import {IERC4626Minimal} from "../src/interfaces/IERC4626Minimal.sol";
 import {IFtsoV2} from "../src/interfaces/IFtsoV2.sol";
 import {RedeemAdapter} from "../src/adapters/RedeemAdapter.sol";
 import {VaultDepositAdapter} from "../src/adapters/VaultDepositAdapter.sol";
+import {VaultWithdrawAdapter} from "../src/adapters/VaultWithdrawAdapter.sol";
 
 /// @notice Exercises Tempo against the real Coston2 FTSO, FXRP and vaults.
 /// @dev The unit suite proves the logic; this proves the integration — that the
@@ -39,6 +40,7 @@ contract TempoForkTest is Test {
     Tempo tempo;
     VaultDepositAdapter vaultDepositAdapter;
     RedeemAdapter redeemAdapter;
+    VaultWithdrawAdapter vaultWithdrawAdapter;
 
     address user = PERSONAL_ACCOUNT;
     address keeper = makeAddr("keeper");
@@ -54,16 +56,18 @@ contract TempoForkTest is Test {
         address[] memory vaults = new address[](1);
         vaults[0] = VAULT;
 
-        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 2);
+        address predicted = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 3);
         vaultDepositAdapter = new VaultDepositAdapter(IERC20(FXRP), predicted, vaults);
         redeemAdapter = new RedeemAdapter(IERC20(FXRP), IAssetManager(ASSET_MANAGER), predicted);
+        vaultWithdrawAdapter = new VaultWithdrawAdapter(IERC20(FXRP), predicted, vaults);
         tempo = new Tempo(
             IERC20(FXRP),
             IFtsoV2(FTSOV2),
             XRP_USD,
             MAX_PRICE_AGE,
             IActionAdapter(address(vaultDepositAdapter)),
-            IActionAdapter(address(redeemAdapter))
+            IActionAdapter(address(redeemAdapter)),
+            IActionAdapter(address(vaultWithdrawAdapter))
         );
         assertEq(address(tempo), predicted);
     }

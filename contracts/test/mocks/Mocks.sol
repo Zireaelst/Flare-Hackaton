@@ -66,6 +66,10 @@ contract MockAdapter is IActionAdapter {
         validateReverts = value;
     }
 
+    function inputToken(address) external view returns (address) {
+        return address(token);
+    }
+
     function validate(address, bytes calldata, uint256) external view {
         if (validateReverts) revert ValidationRejected();
     }
@@ -76,5 +80,38 @@ contract MockAdapter is IActionAdapter {
         totalPulled += amount;
         lastBeneficiary = beneficiary;
         lastXrplAddress = xrplAddress;
+    }
+}
+
+/// @dev A minimal ERC-4626 over FXRP: one share per asset, no yield, no fees.
+///      Enough to prove Tempo pulls shares rather than assets on an exit, and
+///      that the redeemed assets land on the user rather than on an adapter.
+contract MockVault is ERC20 {
+    using SafeERC20 for IERC20;
+
+    IERC20 public immutable underlying;
+
+    constructor(IERC20 _underlying) ERC20("Mock Vault", "mvFXRP") {
+        underlying = _underlying;
+    }
+
+    function decimals() public pure override returns (uint8) {
+        return 6;
+    }
+
+    function asset() external view returns (address) {
+        return address(underlying);
+    }
+
+    function deposit(uint256 assets, address receiver) external returns (uint256) {
+        underlying.safeTransferFrom(msg.sender, address(this), assets);
+        _mint(receiver, assets);
+        return assets;
+    }
+
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256) {
+        _burn(owner, shares);
+        underlying.safeTransfer(receiver, shares);
+        return shares;
     }
 }

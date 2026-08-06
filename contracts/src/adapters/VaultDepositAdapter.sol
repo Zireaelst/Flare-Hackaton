@@ -37,6 +37,12 @@ contract VaultDepositAdapter is IActionAdapter {
     }
 
     /// @inheritdoc IActionAdapter
+    /// @dev Depositing spends FXRP, whatever the vault is.
+    function inputToken(address) external view returns (address) {
+        return address(fxrp);
+    }
+
+    /// @inheritdoc IActionAdapter
     function validate(address vault, bytes calldata, uint256) external view {
         if (!allowedVault[vault]) revert UnknownVault();
         if (IERC4626Minimal(vault).asset() != address(fxrp)) revert VaultAssetMismatch();

@@ -35,6 +35,11 @@ contract RedeemAdapter is IActionAdapter {
     }
 
     /// @inheritdoc IActionAdapter
+    function inputToken(address) external view returns (address) {
+        return address(fxrp);
+    }
+
+    /// @inheritdoc IActionAdapter
     function validate(address, bytes calldata xrplAddress, uint256 amountPerSlice) external view {
         if (xrplAddress.length == 0) revert EmptyXrplAddress();
         uint256 minimum = assetManager.minimumRedeemAmountUBA();
