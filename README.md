@@ -36,8 +36,14 @@ on Flare, its conditions are evaluated on-chain against FTSO, and execution is
 | Order type | Trigger | Action |
 |---|---|---|
 | Schedule (DCA) | every `interval`, `slices` times | Deposit FXRP into a registered vault |
-| Take-profit | FTSO `XRP/USD >= target` | Redeem FXRP → XRP to the user's XRPL address |
-| Stop-loss | FTSO `XRP/USD <= target` | Redeem FXRP → XRP to the user's XRPL address |
+| Take-profit | FTSO `XRP/USD >= target` | Exit the vault, or redeem FXRP → XRP to XRPL |
+| Stop-loss | FTSO `XRP/USD <= target` | Exit the vault, or redeem FXRP → XRP to XRPL |
+
+**Flare solved getting in. Nobody solved getting out.** Smart Accounts v1.3 (28 July 2026)
+already moves XRP into a curated vault with one XRPL signature, and 40M+ XRP has gone in that
+way. Leaving still means noticing the moment yourself, sending another payment, waiting out the
+vault's lag, and sending a third transaction to claim. One XRPL payment to Tempo sets up the
+plan **and** the condition that unwinds it, and the keeper finishes both phases.
 
 Tempo also **automates the stuck-mint recovery protocol** (`0xE0` / `0xE1` / `0xE2`) that
 users are otherwise expected to drive by hand-crafting additional XRPL payments.
@@ -82,9 +88,10 @@ and a real yield vault.
 
 | Contract | Address |
 |---|---|
-| `Tempo` | [`0xdf0D7Be968D27E7533e3b15b7e854Ee2357Efdf7`](https://coston2-explorer.flare.network/address/0xdf0D7Be968D27E7533e3b15b7e854Ee2357Efdf7) |
-| `VaultDepositAdapter` | [`0x7986aAC8d716970d1393bFF27bE4001DA52eb84a`](https://coston2-explorer.flare.network/address/0x7986aAC8d716970d1393bFF27bE4001DA52eb84a) |
-| `RedeemAdapter` | [`0xE5005FDF2C8FCF6fb55F6014b69D0C68e4e66E85`](https://coston2-explorer.flare.network/address/0xE5005FDF2C8FCF6fb55F6014b69D0C68e4e66E85) |
+| `Tempo` | [`0x21836CB02bCfdDaa124821C2e55f948b287A674e`](https://coston2-explorer.flare.network/address/0x21836CB02bCfdDaa124821C2e55f948b287A674e) |
+| `VaultDepositAdapter` | [`0x02791461376ccb178E9e144F1f291f3804FE2530`](https://coston2-explorer.flare.network/address/0x02791461376ccb178E9e144F1f291f3804FE2530) |
+| `VaultWithdrawAdapter` | [`0xef97B90758dAe2543acAca2D5fE1aAB787e4121B`](https://coston2-explorer.flare.network/address/0xef97B90758dAe2543acAca2D5fE1aAB787e4121B) |
+| `RedeemAdapter` | [`0x232Db0590c7145A4F45A596a5aF0f439E4E25ab9`](https://coston2-explorer.flare.network/address/0x232Db0590c7145A4F45A596a5aF0f439E4E25ab9) |
 
 ### Flare contracts Tempo builds on
 

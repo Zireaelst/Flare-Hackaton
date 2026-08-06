@@ -49,11 +49,40 @@ Deployed 2026-08-04 via `contracts/script/Deploy.s.sol`.
 
 | Contract | Address |
 |---|---|
-| `Tempo` | `0xdf0D7Be968D27E7533e3b15b7e854Ee2357Efdf7` |
-| `VaultDepositAdapter` | `0x7986aAC8d716970d1393bFF27bE4001DA52eb84a` |
-| `RedeemAdapter` | `0xE5005FDF2C8FCF6fb55F6014b69D0C68e4e66E85` |
+| `Tempo` | `0x21836CB02bCfdDaa124821C2e55f948b287A674e` |
+| `VaultDepositAdapter` | `0x02791461376ccb178E9e144F1f291f3804FE2530` |
+| `RedeemAdapter` | `0x232Db0590c7145A4F45A596a5aF0f439E4E25ab9` |
+| `VaultWithdrawAdapter` | `0xef97B90758dAe2543acAca2D5fE1aAB787e4121B` |
 
-Explorer: `https://coston2-explorer.flare.network/address/0xdf0D7Be968D27E7533e3b15b7e854Ee2357Efdf7`
+Explorer: `https://coston2-explorer.flare.network/address/0x21836CB02bCfdDaa124821C2e55f948b287A674e`
+
+> Supersedes the 6 August deployment (`Tempo 0xdf0D7Be9…`), which had no
+> `VAULT_WITHDRAW` action. Its orders are orphaned by design: the constructor
+> changed, so the adapters could not be repointed.
+
+### Vault withdrawals are two-phase
+
+The registered FXRP vaults are not plain ERC-4626. `redeem` pays nothing — it
+burns the shares and files a withdrawal against a daily period, released only
+after the vault's lag. Read from `TESTstXRP` on Coston2:
+
+| | |
+|---|---|
+| `lagDuration` | 300 seconds |
+| `PERIOD_DURATION` | 86400 seconds |
+| `withdrawalFee` | 0 |
+| `claim(year, month, day, receiver)` | permissionless — pays the receiver, not the caller |
+
+The keeper drives the second phase. Because `claim` names its receiver rather
+than paying `msg.sender`, it can do so without any authority over the user.
+
+Two things cost time to learn here, both worth not repeating:
+
+- The date passed to `claim` must come from the **request's** period, not from
+  `getWithdrawalEpoch()`. The latter reports the current epoch, which is not
+  necessarily the one a given withdrawal was filed under.
+- A claim inside the 300-second lag reverts with `0x085de625`. That looks like a
+  permission problem and is not one; waiting is the whole fix.
 
 ### Constructor wiring
 
