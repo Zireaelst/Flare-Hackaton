@@ -67,6 +67,7 @@ export async function createOrder(
   return {
     job: {
       status: "awaiting_xrpl_finality",
+      intent: "create",
       xrplTxHash,
       userOpData,
       personalAccount,

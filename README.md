@@ -45,8 +45,14 @@ way. Leaving still means noticing the moment yourself, sending another payment, 
 vault's lag, and sending a third transaction to claim. One XRPL payment to Tempo sets up the
 plan **and** the condition that unwinds it, and the keeper finishes both phases.
 
-Tempo also **automates the stuck-mint recovery protocol** (`0xE0` / `0xE1` / `0xE2`) that
-users are otherwise expected to drive by hand-crafting additional XRPL payments.
+An order can always be cancelled, with another XRPL payment. `Tempo.cancel` requires the owner,
+and the owner is the PersonalAccount — so there is no back door where a relayer could cancel on
+someone's behalf, the same property that stops one creating orders for them. Cancelling moves
+no funds: the FXRP never left the user's account and the allowance behind the order simply goes
+unused.
+
+Tempo also **automates the stuck-mint recovery protocol** (`0xE0` / `0xE1`) that users are
+otherwise expected to drive by hand-crafting additional XRPL payments.
 
 ## How it works
 

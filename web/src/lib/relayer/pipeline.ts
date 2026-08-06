@@ -279,6 +279,15 @@ function succeed(job: RelayJob, hash: `0x${string}`, logs: readonly unknown[]): 
     };
   }
 
+  if (job.intent === "cancel") {
+    return {
+      ...job,
+      status: "done",
+      flareTxHash: hash,
+      message: "Order cancelled. Nothing moved — your FXRP never left your account.",
+    };
+  }
+
   // After a skip-memo recovery this is the expected outcome, not a fault:
   // 0xE0 exists precisely to release the FXRP *without* re-running the
   // operation that failed. Saying so plainly matters, because the alternative

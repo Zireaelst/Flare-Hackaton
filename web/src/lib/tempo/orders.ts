@@ -135,3 +135,25 @@ export const NOT_EXECUTABLE_REASON = [
   "allowance was revoked",
   "not enough FXRP",
 ] as const;
+
+/**
+ * The one call a cancellation needs.
+ *
+ * `Tempo.cancel` requires the owner, and the owner is the PersonalAccount —
+ * which can only act through a user operation. So cancelling is another XRPL
+ * payment, exactly like creating. There is no back door where a relayer could
+ * cancel on someone's behalf, which is the same property that stops a relayer
+ * creating orders for them.
+ *
+ * Nothing is minted and nothing moves: the user's FXRP has never left their
+ * account, and the allowance behind the order simply goes unused.
+ */
+export function buildCancelCalls({ tempo, orderId }: { tempo: Address; orderId: bigint }) {
+  return [
+    {
+      target: tempo,
+      value: 0n,
+      data: encodeFunctionData({ abi: tempoAbi, functionName: "cancel", args: [orderId] }),
+    },
+  ];
+}

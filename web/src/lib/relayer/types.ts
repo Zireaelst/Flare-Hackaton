@@ -48,6 +48,15 @@ export type RecoveryLeg = {
 export type RelayJob = {
   status: RelayStatus;
 
+  /**
+   * What this payment was for.
+   *
+   * Both intents travel the identical pipeline — a cancellation is just another
+   * user operation — but they end differently, and a cancellation that reports
+   * "no order was created" reads like a failure when it is the whole point.
+   */
+  intent?: "create" | "cancel";
+
   /** The XRPL payment that carried the 42-byte 0xFE memo. */
   xrplTxHash: string;
   /** The full PackedUserOperation the memo committed to. */
@@ -91,7 +100,7 @@ export const STATUS_LABEL: Record<RelayStatus, string> = {
   awaiting_xrpl_finality: "Confirming your XRP payment",
   attesting: "Proving the payment to Flare",
   awaiting_proof: "Waiting for the proof to publish",
-  executing: "Minting FXRP and creating your order",
+  executing: "Running your instruction on Flare",
   delayed: "The network rate-limited the mint — waiting",
   recovering: "Recovering your payment",
   retrying: "Retrying the mint",

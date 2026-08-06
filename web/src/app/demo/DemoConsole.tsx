@@ -152,6 +152,28 @@ export function DemoConsole() {
     }
   }
 
+  async function cancel(orderId: string) {
+    setJob(null);
+    setReceipt(null);
+    try {
+      const response = await fetch("/api/orders/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await response.json();
+      if (data.error) {
+        setFormError(data.error);
+        return;
+      }
+      // Cancelling is another XRPL payment, so it runs through the same relay.
+      setJob(data.job);
+      setReceipt({ xrplTxHash: data.job.xrplTxHash, paymentAmountXrp: data.paymentAmountXrp });
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Could not cancel the order");
+    }
+  }
+
   async function runKeeper() {
     setKeeperRunning(true);
     setKeeperResult(null);
@@ -396,7 +418,7 @@ export function DemoConsole() {
                 <p className="text-sm text-muted">No orders yet.</p>
               )}
               {state?.orders.map((order) => (
-                <OrderRow key={order.id} order={order} />
+                <OrderRow key={order.id} order={order} onCancel={() => void cancel(order.id)} />
               ))}
             </div>
           </section>
@@ -485,8 +507,9 @@ function Timeline({ job }: { job: RelayJob }) {
   );
 }
 
-function OrderRow({ order }: { order: OrderView }) {
+function OrderRow({ order, onCancel }: { order: OrderView; onCancel: () => void }) {
   const complete = order.slicesExecuted >= order.slices;
+  const cancellable = !order.cancelled && !complete;
 
   return (
     <div className="rounded-xl border border-line bg-surface-2 p-4">
@@ -529,6 +552,15 @@ function OrderRow({ order }: { order: OrderView }) {
           value={complete || order.cancelled ? "—" : formatCountdown(order.nextExecutionAt)}
         />
       </div>
+
+      {cancellable && (
+        <button
+          onClick={onCancel}
+          className="mt-3 text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-accent"
+        >
+          Cancel — sends one XRPL payment, moves no funds
+        </button>
+      )}
     </div>
   );
 }
