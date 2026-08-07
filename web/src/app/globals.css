@@ -1,108 +1,79 @@
 @import "tailwindcss";
 
 /*
- * Tailwind v4 configures through CSS, not a tailwind.config.ts. `@theme inline`
- * is what generates the utility classes — font-heading, text-accent and so on.
+ * Tailwind v4 configures through CSS, not a tailwind.config.ts.
+ *
+ * The brief asked for TT Norms Pro. It is a commercial licence and the files
+ * are not in this repo, so shipping a @font-face pointing at /fonts/… would
+ * render a silent fallback on every machine but the designer's. Manrope is the
+ * closest free geometric sans — same tight, slightly condensed fintech
+ * character — and is self-hosted through next/font. Drop the licensed woff2
+ * files into public/fonts and swap the family here if the licence is bought.
  */
 @theme inline {
-  --font-heading: var(--font-instrument-serif), serif;
-  --font-body: var(--font-barlow), sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 
-  --color-background: #000000;
-  --color-foreground: #ffffff;
-  --color-surface: #0a0a0c;
-  --color-surface-2: #121216;
-  --color-line: rgba(255, 255, 255, 0.1);
-  --color-muted: rgba(255, 255, 255, 0.55);
-  --color-accent: #ff6b3d;
-  --color-accent-soft: rgba(255, 107, 61, 0.12);
-  --color-positive: #4ade80;
+  --color-page: #f5f5f5;
+  --color-ink: #000000;
+  --color-deep: #2b2644;
 }
 
+html,
 body {
-  background: #000;
-  color: #fff;
-  font-family: var(--font-barlow), sans-serif;
+  background: #f5f5f5;
+  color: #000;
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-h1,
-h2,
-h3 {
-  font-family: var(--font-instrument-serif), serif;
+* {
+  font-family: inherit;
 }
 
-@layer components {
-  /*
-   * The gradient border is a masked pseudo-element rather than a real border:
-   * `mask-composite: exclude` punches the fill out of a padding-box-sized
-   * rectangle, leaving only a 1.4px ring. That ring can then carry a gradient
-   * that fades to nothing at the midpoint of each side, which a plain
-   * `border-image` cannot do.
-   */
-  .liquid-glass-strong {
-    background: rgba(255, 255, 255, 0.01);
-    background-blend-mode: luminosity;
-    backdrop-filter: blur(50px);
-    -webkit-backdrop-filter: blur(50px);
-    border: none;
-    box-shadow:
-      4px 4px 4px rgba(0, 0, 0, 0.05),
-      inset 0 1px 1px rgba(255, 255, 255, 0.15);
-    position: relative;
-    overflow: hidden;
+/*
+ * Two marquees, both translating a duplicated track by exactly -50% so the
+ * second copy lands where the first began and the seam never shows.
+ */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
   }
-
-  .liquid-glass-strong::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1.4px;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.5) 0%,
-      rgba(255, 255, 255, 0.2) 20%,
-      rgba(255, 255, 255, 0) 40%,
-      rgba(255, 255, 255, 0) 60%,
-      rgba(255, 255, 255, 0.2) 80%,
-      rgba(255, 255, 255, 0.5) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
+  to {
+    transform: translateX(-50%);
   }
+}
 
-  /* Quieter variant for cards, where a full 50px blur reads as fog. */
-  .liquid-glass {
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    position: relative;
-    overflow: hidden;
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 22s linear infinite;
+}
+
+.backers-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .backers-track {
+    animation: none;
   }
 }
 
 /*
- * The CTA background, owned by us.
- *
- * The section was specified with a Mux HLS stream, and that stream is a signed
- * third-party URL whose signature expires 2026-08-14 — the submission deadline,
- * one day before judging opens. Depending on it would mean every judge sees a
- * black rectangle. So the video is decoration layered on top of this, and this
- * is what the section actually looks like.
+ * The closing section is the one dark surface on the page. Its background is
+ * ours rather than the video's: the video is decoration that fades in on top
+ * only once it is genuinely playing, so a missing or expired asset leaves a
+ * designed panel instead of a black rectangle.
  */
 .cinematic-bg {
   background:
-    radial-gradient(60% 50% at 20% 30%, rgba(255, 107, 61, 0.16), transparent 70%),
-    radial-gradient(50% 45% at 80% 25%, rgba(120, 90, 255, 0.12), transparent 70%),
-    radial-gradient(70% 60% at 50% 95%, rgba(255, 107, 61, 0.1), transparent 75%),
-    #000;
-  background-size: 180% 180%, 160% 160%, 200% 200%, auto;
+    radial-gradient(60% 50% at 20% 30%, rgba(43, 38, 68, 0.9), transparent 70%),
+    radial-gradient(50% 45% at 80% 25%, rgba(70, 60, 110, 0.6), transparent 70%),
+    #16131f;
+  background-size: 180% 180%, 160% 160%, auto;
   animation: drift 38s ease-in-out infinite alternate;
 }
 
@@ -110,50 +81,17 @@ h3 {
   0% {
     background-position:
       0% 40%,
-      100% 20%,
-      50% 100%;
+      100% 20%;
   }
   100% {
     background-position:
       30% 60%,
-      70% 45%,
-      45% 80%;
+      70% 45%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cinematic-bg {
-    animation: none;
-  }
-}
-
-.grid-lines {
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 35%, transparent 100%);
-}
-
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 107, 61, 0.35);
-  }
-  70% {
-    box-shadow: 0 0 0 10px transparent;
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-
-.pulsing {
-  animation: pulse-ring 2s infinite;
-}
-
-/* Respect a reader who has asked for less motion. */
-@media (prefers-reduced-motion: reduce) {
-  .pulsing {
     animation: none;
   }
 }

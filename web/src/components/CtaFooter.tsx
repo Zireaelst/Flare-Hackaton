@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Hls from "hls.js";
 
 /**
@@ -127,18 +127,19 @@ function renderSection(videoRef: React.RefObject<HTMLVideoElement | null>, video
 
       <div
         className="pointer-events-none absolute left-0 right-0 top-0 z-[1]"
-        style={{ height: "200px", background: "linear-gradient(to bottom, black, transparent)" }}
+        style={{ height: "200px", background: "linear-gradient(to bottom, #F5F5F5, transparent)" }}
       />
       <div
         className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1]"
-        style={{ height: "200px", background: "linear-gradient(to top, black, transparent)" }}
+        style={{ height: "200px", background: "linear-gradient(to top, #16131f, transparent)" }}
       />
 
       <div className="relative z-10">
-        <h2 className="mx-auto mb-4 max-w-3xl font-heading text-5xl italic leading-[0.85] tracking-tight text-white md:text-6xl lg:text-7xl">
+        <h2 className="mx-auto mb-5 max-w-3xl text-5xl font-medium leading-tight text-white md:text-6xl"
+          style={{ letterSpacing: "-0.04em" }}>
           Your XRP already knows what to do.
         </h2>
-        <p className="mx-auto mb-8 max-w-xl font-body text-sm font-light text-white/60 md:text-base">
+        <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-white/60 md:text-lg">
           One payment sets the plan and the exit that unwinds it. Every contract above is live on
           Coston2 &mdash; compose an order and watch it run.
         </p>
@@ -146,24 +147,26 @@ function renderSection(videoRef: React.RefObject<HTMLVideoElement | null>, video
         <div className="flex items-center justify-center gap-6">
           <Link
             href="/demo"
-            className="liquid-glass-strong flex items-center gap-2 rounded-full px-6 py-3 font-body text-sm font-medium text-white transition-all hover:bg-white/10"
+            className="inline-flex items-center gap-3 rounded-full bg-white pl-8 pr-2 py-2 text-base font-medium text-black transition-colors duration-200 hover:bg-white/90"
           >
             Try the demo
-            <ArrowUpRight className="h-5 w-5" />
+            <span className="rounded-full bg-black p-2">
+              <ArrowRight className="h-5 w-5 text-white" />
+            </span>
           </Link>
           <a
             href="https://github.com/Zireaelst/Flare-Hackaton"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 rounded-full bg-white px-6 py-3 font-body text-sm font-medium text-black transition-colors hover:bg-white/90"
+            className="inline-flex items-center gap-2 rounded-full border border-white/25 px-7 py-3.5 text-base font-medium text-white transition-colors duration-200 hover:bg-white/10"
           >
             Read the code
-            <ArrowUpRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" />
           </a>
         </div>
 
         <div className="mt-32 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 md:flex-row">
-          <p className="font-body text-xs font-light text-white/40">
+          <p className="text-sm text-white/40">
             Tempo &mdash; built for Flare Summer Signal. Coston2 testnet.
           </p>
           <div className="flex items-center gap-6">
@@ -173,7 +176,7 @@ function renderSection(videoRef: React.RefObject<HTMLVideoElement | null>, video
                 href={link.href}
                 target="_blank"
                 rel="noreferrer"
-                className="font-body text-xs font-light text-white/40 transition-colors hover:text-white/70"
+                className="text-sm text-white/40 transition-colors duration-200 hover:text-white/70"
               >
                 {link.label}
               </a>

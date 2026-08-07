@@ -230,14 +230,14 @@ export function DemoConsole() {
       </div>
 
       {stateError && (
-        <p className="liquid-glass rounded-xl p-4 font-body text-sm text-accent">{stateError}</p>
+        <p className="rounded-xl border border-black/8 bg-white p-4 text-sm text-[#C2410C]">{stateError}</p>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         {/* Compose */}
-        <section className="liquid-glass rounded-2xl p-6">
-          <h2 className="font-heading text-2xl italic">Compose an order</h2>
-          <p className="mt-1 text-xs leading-relaxed text-white/50">
+        <section className="rounded-2xl border border-black/8 bg-white p-6">
+          <h2 className="text-2xl font-medium tracking-tight">Compose an order</h2>
+          <p className="mt-1 text-xs leading-relaxed text-black/55">
             This becomes one XRPL payment. The demo signs it with its own testnet wallet — a real
             user would sign it in their own.
           </p>
@@ -269,8 +269,8 @@ export function DemoConsole() {
             </Field>
 
             {form.action === "SWAP_TO_STABLE" && (
-              <p className="rounded-xl border border-white/8 bg-white/[0.03] p-4 text-xs leading-relaxed text-white/50">
-                <span className="text-accent">Not available on testnet.</span> SparkDEX has no
+              <p className="rounded-xl border border-black/8 bg-black/[0.025] p-4 text-xs leading-relaxed text-black/55">
+                <span className="text-[#C2410C]">Not available on testnet.</span> SparkDEX has no
                 Coston2 deployment, so the adapter refuses this at order creation rather than
                 accepting it and failing later. It is proven against the real mainnet pool in{" "}
                 <span className="font-mono">SwapMainnetFork.t.sol</span>.
@@ -278,7 +278,7 @@ export function DemoConsole() {
             )}
 
             {form.action === "REDEEM_TO_XRPL" && (
-              <p className="rounded-xl border border-white/8 bg-white/[0.03] p-4 text-xs leading-relaxed text-white/50">
+              <p className="rounded-xl border border-black/8 bg-black/[0.025] p-4 text-xs leading-relaxed text-black/55">
                 Redeems FXRP back to{" "}
                 <span className="font-mono text-foreground">
                   {state ? shortAddress(state.demoXrplAddress, 10) : "your XRPL address"}
@@ -292,7 +292,7 @@ export function DemoConsole() {
                 <select
                   value={form.vault}
                   onChange={(event) => setForm({ ...form, vault: event.target.value })}
-                  className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm outline-none focus:border-accent"
+                  className="w-full rounded-lg border border-black/10 bg-black/[0.03] px-3 py-2 text-sm outline-none focus:border-black/40"
                 >
                   {VAULTS.map((vault) => (
                     <option key={vault.address} value={vault.address}>
@@ -335,7 +335,7 @@ export function DemoConsole() {
                 <select
                   value={form.intervalSeconds}
                   onChange={(event) => setForm({ ...form, intervalSeconds: Number(event.target.value) })}
-                  className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm outline-none focus:border-accent"
+                  className="w-full rounded-lg border border-black/10 bg-black/[0.03] px-3 py-2 text-sm outline-none focus:border-black/40"
                 >
                   <option value={60}>every minute (demo)</option>
                   <option value={3600}>every hour</option>
@@ -346,7 +346,7 @@ export function DemoConsole() {
             )}
 
             {form.action === "VAULT_DEPOSIT" && form.kind === "SCHEDULE" && (
-              <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
+              <div className="rounded-xl border border-black/8 bg-black/[0.025] p-4">
                 <label className="flex items-start gap-3">
                   <input
                     type="checkbox"
@@ -356,7 +356,7 @@ export function DemoConsole() {
                   />
                   <span className="text-xs leading-relaxed">
                     <span className="font-medium">Protect it with an exit</span>
-                    <span className="mt-1 block text-white/50">
+                    <span className="mt-1 block text-black/55">
                       Pull the whole position out of the vault if XRP falls this far. Set up in the
                       same payment, before a single share exists.
                     </span>
@@ -380,7 +380,7 @@ export function DemoConsole() {
                         }
                         className="mt-0.5 accent-[var(--accent)]"
                       />
-                      <span className="text-[11px] leading-relaxed text-white/50">
+                      <span className="text-[11px] leading-relaxed text-black/55">
                         Stop the schedule too when the exit fires. Without this it keeps buying
                         into the fall right after pulling you out.
                       </span>
@@ -390,18 +390,18 @@ export function DemoConsole() {
               </div>
             )}
 
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4 text-xs leading-relaxed text-white/50">
+            <div className="rounded-xl border border-black/8 bg-black/[0.025] p-4 text-xs leading-relaxed text-black/55">
               One payment mints{" "}
               <span className="font-mono text-foreground">{total} FXRP</span> and approves Tempo for
               exactly that much — never more.
               {form.action === "REDEEM_TO_XRPL" && form.amountPerSlice < 5 && (
-                <span className="mt-2 block text-accent">
+                <span className="mt-2 block text-[#C2410C]">
                   FAssets will not redeem less than 5 FXRP per slice.
                 </span>
               )}
             </div>
 
-            {formError && <p className="text-sm text-accent">{formError}</p>}
+            {formError && <p className="text-sm text-[#C2410C]">{formError}</p>}
 
             <button
               onClick={() => void submit()}
@@ -410,7 +410,7 @@ export function DemoConsole() {
                 form.action === "SWAP_TO_STABLE" ||
                 (!!job && job.status !== "done" && job.status !== "failed")
               }
-              className="w-full rounded-full bg-white py-3 font-body text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-full bg-black py-3 text-sm font-medium text-white transition-colors duration-200 hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting ? "Sending the XRP payment…" : "Send one XRP payment"}
             </button>
@@ -419,15 +419,15 @@ export function DemoConsole() {
 
         {/* Relay + orders */}
         <div className="space-y-6">
-          <section className="liquid-glass rounded-2xl p-6">
+          <section className="rounded-2xl border border-black/8 bg-white p-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-heading text-2xl italic">Relay</h2>
+              <h2 className="text-2xl font-medium tracking-tight">Relay</h2>
               {receipt && (
                 <a
                   href={`${XRPL_EXPLORER}/transactions/${receipt.xrplTxHash}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-mono text-xs text-white/50 transition-colors hover:text-foreground"
+                  className="font-mono text-xs text-black/55 transition-colors hover:text-black"
                 >
                   {receipt.paymentAmountXrp} XRP · {shortAddress(receipt.xrplTxHash)}
                 </a>
@@ -435,7 +435,7 @@ export function DemoConsole() {
             </div>
 
             {!job ? (
-              <p className="mt-4 text-sm text-white/50">
+              <p className="mt-4 text-sm text-black/55">
                 Nothing in flight. Compose an order to watch the pipeline run.
               </p>
             ) : (
@@ -443,31 +443,31 @@ export function DemoConsole() {
             )}
           </section>
 
-          <section className="liquid-glass rounded-2xl p-6">
+          <section className="rounded-2xl border border-black/8 bg-white p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="font-heading text-2xl italic">Standing orders</h2>
-                <p className="mt-1 text-xs text-white/50">
+                <h2 className="text-2xl font-medium tracking-tight">Standing orders</h2>
+                <p className="mt-1 text-xs text-black/55">
                   Execution is permissionless — this button is a convenience, not an authority.
                 </p>
               </div>
               <button
                 onClick={() => void runKeeper()}
                 disabled={keeperRunning}
-                className="liquid-glass-strong rounded-full px-4 py-2 font-body text-xs font-medium transition-all hover:bg-white/10 disabled:opacity-40"
+                className="rounded-full border border-black/15 bg-white px-4 py-2 text-xs font-medium transition-colors duration-200 hover:bg-black/[0.04] disabled:opacity-40"
               >
                 {keeperRunning ? "Running…" : "Run keeper"}
               </button>
             </div>
 
-            {keeperResult && <p className="mt-3 text-xs text-white/50">{keeperResult}</p>}
+            {keeperResult && <p className="mt-3 text-xs text-black/55">{keeperResult}</p>}
 
             {!!state?.pendingWithdrawals?.length && (
-              <div className="mt-4 rounded-xl border border-line bg-accent-soft p-4">
-                <p className="text-xs font-medium text-accent">
+              <div className="mt-4 rounded-xl border border-black/8 bg-[#FFF1EA] p-4">
+                <p className="text-xs font-medium text-[#C2410C]">
                   {formatFxrp(state.pendingWithdrawals[0].shares)} FXRP leaving the vault
                 </p>
-                <p className="mt-1 text-[11px] leading-relaxed text-white/50">
+                <p className="mt-1 text-[11px] leading-relaxed text-black/55">
                   These vaults do not pay out on the spot — they queue the withdrawal and release
                   it after a short lag. The shares are already gone and the FXRP is not back yet.
                   The keeper finishes it for you; nothing further is needed.
@@ -477,7 +477,7 @@ export function DemoConsole() {
 
             <div className="mt-5 space-y-3">
               {!state?.orders.length && (
-                <p className="text-sm text-white/50">No orders yet.</p>
+                <p className="text-sm text-black/55">No orders yet.</p>
               )}
               {state?.orders.map((order) => (
                 <OrderRow key={order.id} order={order} onCancel={() => void cancel(order.id)} />
@@ -508,28 +508,28 @@ function Timeline({ job }: { job: RelayJob }) {
             <span
               className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
                 done
-                  ? "bg-positive"
+                  ? "bg-[#16A34A]"
                   : active
-                    ? "bg-accent pulsing"
-                    : "border border-line bg-transparent"
+                    ? "bg-[#FF6B3D] pulsing"
+                    : "border border-black/8 bg-transparent"
               }`}
             />
             <div className="min-w-0">
-              <p className={`text-sm ${done || active ? "text-foreground" : "text-white/50"}`}>
+              <p className={`text-sm ${done || active ? "text-foreground" : "text-black/55"}`}>
                 {STATUS_LABEL[status]}
               </p>
-              {active && !detour && <p className="mt-0.5 text-xs text-white/50">{job.message}</p>}
+              {active && !detour && <p className="mt-0.5 text-xs text-black/55">{job.message}</p>}
             </div>
           </div>
         );
       })}
 
       {detour && (
-        <div className="mt-3 rounded-xl border border-line bg-accent-soft p-4">
-          <p className="text-sm font-medium text-accent">{STATUS_LABEL[job.status]}</p>
-          <p className="mt-1 text-xs leading-relaxed text-white/50">{job.message}</p>
+        <div className="mt-3 rounded-xl border border-black/8 bg-[#FFF1EA] p-4">
+          <p className="text-sm font-medium text-[#C2410C]">{STATUS_LABEL[job.status]}</p>
+          <p className="mt-1 text-xs leading-relaxed text-black/55">{job.message}</p>
           {job.recovery && (
-            <p className="mt-2 text-[11px] leading-relaxed text-white/50">
+            <p className="mt-2 text-[11px] leading-relaxed text-black/55">
               Something went wrong with the mint, so Tempo is fixing it for you. Your XRP is safe
               at the vault the whole time — no action needed, and please do not send another
               payment.
@@ -540,7 +540,7 @@ function Timeline({ job }: { job: RelayJob }) {
               href={`${EXPLORER}/tx/${job.recovery.flareTxHash}`}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-block font-mono text-[11px] text-white/50 transition-colors hover:text-foreground"
+              className="mt-2 inline-block font-mono text-[11px] text-black/55 transition-colors hover:text-black"
             >
               recovery tx {shortAddress(job.recovery.flareTxHash)} ↗
             </a>
@@ -549,9 +549,9 @@ function Timeline({ job }: { job: RelayJob }) {
       )}
 
       {failed && (
-        <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.03] p-4">
-          <p className="text-sm text-accent">{job.message}</p>
-          {job.error && <p className="mt-1 break-words text-xs text-white/50">{job.error}</p>}
+        <div className="mt-3 rounded-xl border border-black/8 bg-black/[0.025] p-4">
+          <p className="text-sm text-[#C2410C]">{job.message}</p>
+          {job.error && <p className="mt-1 break-words text-xs text-black/55">{job.error}</p>}
         </div>
       )}
 
@@ -560,7 +560,7 @@ function Timeline({ job }: { job: RelayJob }) {
           href={`${EXPLORER}/tx/${job.flareTxHash}`}
           target="_blank"
           rel="noreferrer"
-          className="mt-3 inline-block font-mono text-xs text-white/50 transition-colors hover:text-foreground"
+          className="mt-3 inline-block font-mono text-xs text-black/55 transition-colors hover:text-black"
         >
           Flare tx {shortAddress(job.flareTxHash)} ↗
         </a>
@@ -574,20 +574,20 @@ function OrderRow({ order, onCancel }: { order: OrderView; onCancel: () => void 
   const cancellable = !order.cancelled && !complete;
 
   return (
-    <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
+    <div className="rounded-xl border border-black/8 bg-black/[0.025] p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-white/50">#{order.id}</span>
+          <span className="font-mono text-xs text-black/55">#{order.id}</span>
           <span className="text-sm font-medium">{ORDER_KIND_LABEL[order.kind]}</span>
-          <span className="text-xs text-white/50">→ {ACTION_LABEL[order.action]}</span>
+          <span className="text-xs text-black/55">→ {ACTION_LABEL[order.action]}</span>
         </div>
         <span
           className={`rounded-full px-2.5 py-0.5 text-[11px] ${
             order.cancelled
-              ? "bg-surface text-white/50"
+              ? "bg-white text-black/55"
               : order.executable
-                ? "bg-accent-soft text-accent"
-                : "bg-surface text-white/50"
+                ? "bg-[#FFF1EA] text-[#C2410C]"
+                : "bg-white text-black/55"
           }`}
         >
           {order.cancelled ? "cancelled" : order.executable ? "ready" : order.reason}
@@ -616,14 +616,14 @@ function OrderRow({ order, onCancel }: { order: OrderView; onCancel: () => void 
       </div>
 
       {order.cancelsOrderId !== null && (
-        <p className="mt-2 text-[11px] text-white/50">
+        <p className="mt-2 text-[11px] text-black/55">
           Stops order #{order.cancelsOrderId} when it fires — so the schedule does not buy back
           into the fall.
         </p>
       )}
 
       {order.cancelled && (
-        <p className="mt-2 text-[11px] text-white/50">
+        <p className="mt-2 text-[11px] text-black/55">
           Cancelled. Nothing moved: the FXRP never left the account and the allowance went unused.
         </p>
       )}
@@ -631,7 +631,7 @@ function OrderRow({ order, onCancel }: { order: OrderView; onCancel: () => void 
       {cancellable && (
         <button
           onClick={onCancel}
-          className="mt-3 text-[11px] text-white/50 underline underline-offset-2 transition-colors hover:text-accent"
+          className="mt-3 text-[11px] text-black/55 underline underline-offset-2 transition-colors hover:text-[#C2410C]"
         >
           Cancel — sends one XRPL payment, moves no funds
         </button>
@@ -643,7 +643,7 @@ function OrderRow({ order, onCancel }: { order: OrderView; onCancel: () => void 
 function Cell({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-white/50">{label}</p>
+      <p className="text-black/55">{label}</p>
       <p className="mt-0.5 font-mono">{value}</p>
     </div>
   );
@@ -651,10 +651,10 @@ function Cell({ label, value }: { label: string; value: string }) {
 
 function Stat({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <div className="liquid-glass rounded-2xl p-5">
-      <p className="font-body text-[11px] uppercase tracking-[0.15em] text-white/40">{label}</p>
-      <p className="mt-1.5 font-heading text-3xl italic tracking-tight">{value}</p>
-      <p className="mt-0.5 font-mono text-[11px] text-white/50">{hint}</p>
+    <div className="rounded-2xl border border-black/8 bg-white p-5">
+      <p className="text-[11px] uppercase tracking-[0.15em] text-black/45">{label}</p>
+      <p className="mt-1.5 text-3xl font-medium tracking-tight">{value}</p>
+      <p className="mt-0.5 font-mono text-[11px] text-black/55">{hint}</p>
     </div>
   );
 }
@@ -662,7 +662,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block font-body text-[11px] uppercase tracking-[0.15em] text-white/40">{label}</span>
+      <span className="mb-1.5 block text-[11px] uppercase tracking-[0.15em] text-black/45">{label}</span>
       {children}
     </label>
   );
@@ -692,7 +692,7 @@ function NumberInput({
         if (event.target.value === "" || Number.isNaN(parsed)) return;
         onChange(parsed);
       }}
-      className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+      className="w-full rounded-lg border border-black/10 bg-black/[0.03] px-3 py-2 font-mono text-sm outline-none focus:border-black/40"
     />
   );
 }
@@ -707,13 +707,13 @@ function Segmented({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="flex gap-1 rounded-lg border border-white/10 bg-white/[0.04] p-1">
+    <div className="flex gap-1 rounded-lg border border-black/10 bg-black/[0.03] p-1">
       {options.map((option) => (
         <button
           key={option.value}
           onClick={() => onChange(option.value)}
           className={`flex-1 rounded-md px-2 py-1.5 text-xs transition-colors ${
-            value === option.value ? "bg-accent text-black" : "text-white/50 hover:text-foreground"
+            value === option.value ? "bg-black text-white" : "text-black/55 hover:text-black"
           }`}
         >
           {option.label}
