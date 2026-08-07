@@ -7,7 +7,7 @@ Payment, requiring no FLR, no EVM wallet, and no bridge.
 
 | | |
 |---|---|
-| Status | Approved, pre-implementation |
+| Status | **Built and deployed.** See the revision log below for what the chain changed |
 | Date | 2026-08-03 |
 | Deadline | 2026-08-14 (judging 15–21 Aug, winners 24 Aug) |
 | Team | Solo + Claude Code |
@@ -18,6 +18,62 @@ Payment, requiring no FLR, no EVM wallet, and no bridge.
 Supersedes `2026-08-03-obscura-design.md`, which is archived. Obscura required a continuously
 running TEE stack; no free, card-free, always-on Docker host exists, and the judging window
 runs a week past submission.
+
+---
+
+## 0. Revision log — what contact with the chain changed
+
+This document was written before a line of Tempo existed. It is kept as written, because how
+the thinking moved is part of the record, but the following turned out differently. Where this
+spec and the code disagree, the code is right.
+
+**The thesis held. The differentiator moved.** Flare shipped Smart Accounts v1.3 on 28 July
+2026 — one XRPL signature into a curated vault, no EVM wallet, no gas token. Getting *in* is
+solved and is no longer worth claiming; 40M+ XRP has already gone that way. Getting *out* is
+not. Tempo's centre of gravity moved from entry to exit accordingly.
+
+**Vault withdrawals are two-phase, and no document says so.** `redeem` on the registered FXRP
+vaults pays nothing: it burns the shares and files a withdrawal against a daily period,
+released only after a lag (300s on `TESTstXRP`). Found by running it and watching the shares
+vanish with no assets arriving. This is now the single strongest argument for the product —
+leaving a Flare vault from XRPL takes three signed steps spread over a wait, which nobody does
+reliably by hand. The keeper drives both phases; `claim` names its receiver rather than paying
+`msg.sender`, so it can finish someone else's withdrawal without holding any authority.
+
+**Take-profit as specified did not take profit.** §3 below has both price triggers redeeming
+FXRP → XRP. That relocates a position; it does not close one — same asset, same exposure, same
+loss. `SWAP_TO_STABLE` was added so a stop actually stops. Its floor comes from FTSO rather
+than the caller, so the keeper cannot acquire price authority through the back door.
+
+**An exit had to disarm the plan behind it.** Watching a real run: the stop fired, the position
+unwound, the withdrawal claimed — and the schedule promptly deposited again. `createOrderWithExit`
+now creates both orders and links them in one call, because the user operation is encoded
+before either order exists and the client cannot know the plan's id.
+
+**Two actions became four, and adapters gained an input token.** `VAULT_WITHDRAW` spends
+*shares*, not FXRP, which broke the assumption that every order spends the same asset.
+
+**Redemption is not lot-aligned.** `redeemAmount` takes arbitrary UBA; the binding constraint
+is `minimumRedeemAmountUBA` (5 FXRP), not the 10 XRP lot this spec assumed.
+
+**The FDC attestation type is `XRPPayment`, not `Payment`.** Different response shapes;
+`AssetManagerFXRP` accepts only the former.
+
+**`0xE2` was dropped.** Its byte layout is published nowhere we could verify against, and
+guessing the layout of a memo that moves money strands funds rather than recovering them.
+`0xE0` and `0xE1` are implemented.
+
+**A perp adapter was investigated and rejected.** SparkDEX Eternal is mainnet-only, already
+carries native TP/SL, and charges 2 FLR per order as `msg.value` — the one thing Tempo's users
+are defined by not having. Three independent reasons, all found by reading its ABI rather than
+by writing code against it.
+
+**One call in this document aged well.** §3's insistence on avoiding a DEX dependency was
+right: SparkDEX has no deployment on Coston2 or Coston. The swap adapter is therefore an
+addition proven on a mainnet fork, never a load-bearing dependency.
+
+Current state lives in [`../deployments.md`](../deployments.md),
+[`../security.md`](../security.md) and the README.
 
 ---
 
@@ -71,6 +127,9 @@ special opcodes:
 | `0xE1` | Send another payment to fast-forward a nonce stranded on an abandoned operation |
 | `0xE2` | Send another payment to replace the executor fee on a stuck transaction |
 
+> Tempo implements `0xE0` and `0xE1`. `0xE2` is documented by Flare but its byte layout is
+> not published, and it is left alone rather than guessed at — see §0.
+
 And the most common cause is mundane: **two XRPL payments sent in quick succession both read
 the same `getNonce`.** One wins, the other reverts with `InvalidNonce` and strands its XRP.
 
@@ -99,6 +158,9 @@ condition is met — and that recovers itself when the mint path fails.
 | **Schedule (DCA)** | every `interval` seconds, `slices` times | Deposit a slice of FXRP into a registered vault (Firelight / Upshift) |
 | **Take-profit** | FTSO `XRP/USD >= target` | Redeem FXRP → XRP to the user's own XRPL address |
 | **Stop-loss** | FTSO `XRP/USD <= target` | Redeem FXRP → XRP to the user's own XRPL address |
+
+> **Superseded — see §0.** Redeeming to XRPL does not close a position, and the shipped action
+> set is four, not two: `VAULT_DEPOSIT`, `VAULT_WITHDRAW`, `REDEEM_TO_XRPL`, `SWAP_TO_STABLE`.
 
 **FTSO is load-bearing, not decorative** — the price feed *is* the trigger. Remove FTSO and
 two of the three order types cease to exist.
@@ -222,7 +284,7 @@ amount from the intended net mint, not the other way around.
                          └─────────────────────┘        ├ FtsoV2 (trigger)
                                                         ├ transferFrom(PersonalAccount)
                                                         ├ vault deposit  │ FAssets redeem
-                                                        └ recovery driver (0xE0/0xE1/0xE2)
+                                                        └ recovery driver (0xE0/0xE1)
                                     ▲
                          ┌──────────┴──────────┐
                          │ Next.js on Vercel   │  read-only chain state + timeline
