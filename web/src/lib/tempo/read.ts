@@ -4,7 +4,7 @@ import { ftsoV2Abi } from "../flare/abis/flare";
 import { publicClient, getFtsoV2, getFxrpAddress } from "../flare/clients";
 import { config } from "../flare/config";
 import { tempoAbi } from "./abi";
-import { NOT_EXECUTABLE_REASON } from "./orders";
+import { NOT_EXECUTABLE_REASON, NO_LINKED_ORDER } from "./orders";
 
 export type OrderView = {
   id: string;
@@ -20,6 +20,8 @@ export type OrderView = {
   nextExecutionAt: string;
   expiry: string;
   priceTarget: string;
+  /** The order this one disarms when it fires, if any. */
+  cancelsOrderId: string | null;
   xrplAddress: string;
   executable: boolean;
   reason: string;
@@ -89,6 +91,8 @@ export async function listOrders(limit = 25): Promise<OrderView[]> {
         nextExecutionAt: order.nextExecutionAt.toString(),
         expiry: order.expiry.toString(),
         priceTarget: order.priceTarget.toString(),
+        cancelsOrderId:
+          order.cancelsOrderId === NO_LINKED_ORDER ? null : order.cancelsOrderId.toString(),
         // Stored as raw bytes on-chain; it is an ASCII XRPL address.
         xrplAddress: order.xrplAddress === "0x" ? "" : Buffer.from(order.xrplAddress.slice(2), "hex").toString(),
         executable,

@@ -20,6 +20,9 @@ export const ActionKind = {
  */
 export const WHOLE_BALANCE = (1n << 256n) - 1n;
 
+/** `Tempo.NO_LINKED_ORDER` — this order disarms nothing when it fires. */
+export const NO_LINKED_ORDER = (1n << 256n) - 1n;
+
 export type OrderKindValue = (typeof OrderKind)[keyof typeof OrderKind];
 export type ActionKindValue = (typeof ActionKind)[keyof typeof ActionKind];
 

@@ -601,6 +601,19 @@ function OrderRow({ order, onCancel }: { order: OrderView; onCancel: () => void 
         />
       </div>
 
+      {order.cancelsOrderId !== null && (
+        <p className="mt-2 text-[11px] text-muted">
+          Stops order #{order.cancelsOrderId} when it fires — so the schedule does not buy back
+          into the fall.
+        </p>
+      )}
+
+      {order.cancelled && (
+        <p className="mt-2 text-[11px] text-muted">
+          Cancelled. Nothing moved: the FXRP never left the account and the allowance went unused.
+        </p>
+      )}
+
       {cancellable && (
         <button
           onClick={onCancel}
