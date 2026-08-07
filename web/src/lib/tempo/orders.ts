@@ -165,19 +165,41 @@ function approvalFor({
   };
 }
 
-/** Human-readable form of Tempo's NotExecutableReason enum. */
-export const NOT_EXECUTABLE_REASON = [
-  "ready",
-  "no such order",
-  "cancelled",
-  "completed",
-  "expired",
-  "waiting for the next slice",
-  "waiting for the price target",
-  "price feed is stale",
-  "allowance was revoked",
-  "not enough FXRP",
-] as const;
+/**
+ * Human-readable form of Tempo's NotExecutableReason enum.
+ *
+ * Action-aware, because the last two depend on what the order actually spends.
+ * A vault exit with nothing deposited was reporting "not enough FXRP", which
+ * sends the reader looking at the wrong balance entirely.
+ */
+export function notExecutableReason(reason: number, action: number): string {
+  const isVaultExit = action === ActionKind.VAULT_WITHDRAW;
+
+  switch (reason) {
+    case 0:
+      return "ready";
+    case 1:
+      return "no such order";
+    case 2:
+      return "cancelled";
+    case 3:
+      return "completed";
+    case 4:
+      return "expired";
+    case 5:
+      return "waiting for the next slice";
+    case 6:
+      return "waiting for the price target";
+    case 7:
+      return "price feed is stale";
+    case 8:
+      return isVaultExit ? "the vault shares are not approved" : "the FXRP is not approved";
+    case 9:
+      return isVaultExit ? "nothing in the vault yet" : "not enough FXRP";
+    default:
+      return "unknown";
+  }
+}
 
 /**
  * The one call a cancellation needs.

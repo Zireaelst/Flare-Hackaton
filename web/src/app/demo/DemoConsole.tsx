@@ -23,6 +23,7 @@ type ChainState = {
   price: { price: number; timestamp: number };
   fxrpBalance: string;
   demoXrplAddress: string;
+  pendingWithdrawals: { vault: string; shares: string; year: number; month: number; day: number }[];
   personalAccount: string;
   tempoAddress: string;
 };
@@ -461,6 +462,19 @@ export function DemoConsole() {
 
             {keeperResult && <p className="mt-3 text-xs text-muted">{keeperResult}</p>}
 
+            {!!state?.pendingWithdrawals?.length && (
+              <div className="mt-4 rounded-xl border border-line bg-accent-soft p-4">
+                <p className="text-xs font-medium text-accent">
+                  {formatFxrp(state.pendingWithdrawals[0].shares)} FXRP leaving the vault
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                  These vaults do not pay out on the spot — they queue the withdrawal and release
+                  it after a short lag. The shares are already gone and the FXRP is not back yet.
+                  The keeper finishes it for you; nothing further is needed.
+                </p>
+              </div>
+            )}
+
             <div className="mt-5 space-y-3">
               {!state?.orders.length && (
                 <p className="text-sm text-muted">No orders yet.</p>
@@ -669,7 +683,15 @@ function NumberInput({
       value={value}
       step={step}
       min={0}
-      onChange={(event) => onChange(Number(event.target.value))}
+      onChange={(event) => {
+        // A number input under a comma-decimal locale reports "" for a value
+        // the browser considers half-typed, and Number("") is 0 — which would
+        // silently turn a price target into zero while the field still looked
+        // right. Ignore unparseable input and keep the last good value.
+        const parsed = Number(event.target.value);
+        if (event.target.value === "" || Number.isNaN(parsed)) return;
+        onChange(parsed);
+      }}
       className="w-full rounded-lg border border-line bg-surface-2 px-3 py-2 font-mono text-sm outline-none focus:border-accent"
     />
   );

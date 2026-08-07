@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Wallet } from "xrpl";
-import { getFxrpBalance, getXrpUsdPrice, listOrders } from "@/lib/tempo/read";
+import { getFxrpBalance, getXrpUsdPrice, listOrders, listPendingWithdrawals } from "@/lib/tempo/read";
 import { getPersonalAccount } from "@/lib/flare/smartAccounts";
 import { config } from "@/lib/flare/config";
 
@@ -12,16 +12,18 @@ export async function GET() {
     const demoAddress = Wallet.fromSeed(config.demoXrplSeed()).address;
     const personalAccount = await getPersonalAccount(demoAddress);
 
-    const [orders, price, fxrpBalance] = await Promise.all([
+    const [orders, price, fxrpBalance, pendingWithdrawals] = await Promise.all([
       listOrders(),
       getXrpUsdPrice(),
       getFxrpBalance(personalAccount),
+      listPendingWithdrawals(personalAccount),
     ]);
 
     return NextResponse.json({
       orders,
       price,
       fxrpBalance,
+      pendingWithdrawals,
       demoXrplAddress: demoAddress,
       personalAccount,
       tempoAddress: config.tempoAddress,
