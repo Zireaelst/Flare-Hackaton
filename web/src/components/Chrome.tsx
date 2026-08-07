@@ -11,6 +11,12 @@ export function Nav() {
           <span className="text-2xl font-medium tracking-tight text-black">Tempo</span>
         </Link>
         <nav className="flex items-center gap-8">
+          <Link
+            href="/docs"
+            className="text-base font-medium text-gray-700 transition-colors duration-200 hover:text-black"
+          >
+            Docs
+          </Link>
           <a
             href="https://github.com/Zireaelst/Flare-Hackaton"
             target="_blank"

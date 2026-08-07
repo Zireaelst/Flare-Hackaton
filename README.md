@@ -126,6 +126,8 @@ deploy to any testnet; that one is proven on a Flare mainnet fork instead.
 - Deployment record: [`docs/deployments.md`](docs/deployments.md)
 - Chain constants and Day 0 findings: [`docs/coston2-constants.md`](docs/coston2-constants.md)
 - Security model and residual risks: [`docs/security.md`](docs/security.md)
+- Written documentation, in the app: [`/docs`](https://tempo-three-orpin.vercel.app/docs)
+- Deferred visual work: [`docs/cosmetics-backlog.md`](docs/cosmetics-backlog.md)
 
 ## Running it
 
@@ -149,7 +151,7 @@ The fork tests report as skipped without an RPC URL, so the default run stays of
 
 ```
 web/
-  src/app/                landing page, demo console
+  src/app/                landing page, docs, demo console
   src/app/api/orders      compose an order and send the one XRPL payment
   src/app/api/relay       advance a relay by one step (stateless, poll-driven)
   src/app/api/keeper      execute due orders

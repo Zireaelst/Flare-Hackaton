@@ -45,6 +45,7 @@ const NAV_LINKS = [
   { label: "Order types", href: "#orders" },
   { label: "Proven", href: "#proven" },
   { label: "Contracts", href: "#contracts" },
+  { label: "Docs", href: "/docs" },
 ];
 
 function PillButton({

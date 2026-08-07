@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RelayJob } from "@/lib/relayer/types";
 import { RELAY_STEPS, STATUS_LABEL } from "@/lib/relayer/types";
 import type { OrderView } from "@/lib/tempo/read";
+import { PriceChart, type TargetLine } from "./PriceChart";
 import {
   ACTION_LABEL,
   WHOLE_BALANCE_STR,
@@ -205,17 +206,30 @@ export function DemoConsole() {
     }
   }
 
+  // Only orders that can still fire are worth drawing; a completed stop is
+  // history, and a line for it would imply the level still matters.
+  const targets: TargetLine[] = (state?.orders ?? [])
+    .filter((o) => o.kind !== 0 && !o.cancelled && o.slicesExecuted < o.slices && o.priceTarget !== "0")
+    .map((o) => ({
+      orderId: o.id,
+      price: Number(o.priceTarget) / 1e18,
+      above: o.kind === 1,
+      label: `#${o.id} ${o.kind === 1 ? "TP" : "SL"} $${(Number(o.priceTarget) / 1e18).toFixed(4)}`,
+    }));
+
   const total = form.amountPerSlice * form.slices;
   const priceAge = state ? Math.floor(Date.now() / 1000) - state.price.timestamp : 0;
 
   return (
     <div className="space-y-6">
+      <PriceChart targets={targets} />
+
       {/* Chain strip */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat
-          label="XRP / USD"
-          value={state ? `$${state.price.price.toFixed(4)}` : "—"}
-          hint={state ? `FTSO, ${Math.max(priceAge, 0)}s ago` : "reading FTSO"}
+          label="Feed age"
+          value={state ? `${Math.max(priceAge, 0)}s` : "—"}
+          hint="stale past 300s — the contract refuses"
         />
         <Stat
           label="Personal account FXRP"
