@@ -1,35 +1,58 @@
 import Link from "next/link";
-import { Footer, Nav } from "@/components/Chrome";
+import { ArrowUpRight } from "lucide-react";
+import { Nav } from "@/components/Chrome";
+import CtaFooter from "@/components/CtaFooter";
 
-const ORDER_TYPES = [
+const ORDERS = [
   {
     name: "Schedule",
-    trigger: "Every interval, N times",
-    body: "Dollar-cost average into a yield vault over weeks, from one payment.",
+    trigger: "every interval, N times",
+    body: "Dollar-cost average into a yield vault over weeks, from a single payment.",
   },
   {
-    name: "Take profit",
-    trigger: "XRP/USD rises to your target",
-    body: "Redeem back to your XRPL address the moment the price is hit.",
+    name: "Exit",
+    trigger: "XRP/USD crosses your target",
+    body: "Unwind the whole position — including the two-phase withdrawal these vaults require.",
   },
   {
-    name: "Stop loss",
-    trigger: "XRP/USD falls to your target",
-    body: "Exit without watching a chart or trusting a centralised bot.",
+    name: "Redeem",
+    trigger: "on a schedule or a price",
+    body: "Send FXRP back to your XRPL address through native FAssets redemption.",
   },
 ];
 
 const STACK = [
-  { name: "Smart Accounts", role: "The entry point. One XRP payment, no FLR, no EVM wallet." },
-  { name: "FAssets / FXRP", role: "The asset being scheduled, and native redemption back to XRPL." },
-  { name: "FTSO v2", role: "The price trigger itself — remove it and two order types cease to exist." },
-  { name: "FDC", role: "The XRPPayment attestation that proves your payment to Flare." },
+  { name: "Smart Accounts", role: "One XRP payment, no FLR, no EVM wallet, no bridge." },
+  { name: "FAssets / FXRP", role: "The asset being scheduled, and native redemption home." },
+  { name: "FTSO v2", role: "The trigger itself — and the floor a swap will accept." },
+  { name: "FDC", role: "An XRPPayment attestation proving your payment to Flare." },
+];
+
+const PROVEN = [
+  {
+    label: "One payment, two orders",
+    body: "A plan and the exit that protects it, created together before a single vault share exists.",
+  },
+  {
+    label: "The exit disarms the plan",
+    body: "Order #6 unwound the position and left order #5 cancelled at 1/3, on chain.",
+  },
+  {
+    label: "Two-phase withdrawal, closed",
+    body: "The vault queued 5 FXRP and released it after its lag; the keeper claimed it back for the user.",
+  },
+  {
+    label: "Home to the XRP Ledger",
+    body: "10 FXRP redeemed, 9.95 XRP arrived at the XRPL address. The circle closes.",
+  },
 ];
 
 const CONTRACTS = [
-  { name: "Tempo", address: "0xdf0D7Be968D27E7533e3b15b7e854Ee2357Efdf7" },
-  { name: "VaultDepositAdapter", address: "0x7986aAC8d716970d1393bFF27bE4001DA52eb84a" },
-  { name: "RedeemAdapter", address: "0xE5005FDF2C8FCF6fb55F6014b69D0C68e4e66E85" },
+  { name: "Tempo", address: "0x5B281A91b54bd2E43f9f39A5AEF0CC7BbF15Fb6D" },
+  { name: "VaultDepositAdapter", address: "0xfcBDC27153263A90FAa3ffed4aB25FACC6351a59" },
+  { name: "VaultWithdrawAdapter", address: "0x48b4B2796f051041d393aD2d1B615D21419EC7de" },
+  { name: "RedeemAdapter", address: "0x22eB0F7075481eCB8c3b544d8ee8101400e6a47A" },
+  { name: "SwapAdapter", address: "0x47E5dEBF37a1201FB77a23E6C7872940C7b713fc" },
 ];
 
 export default function Home() {
@@ -37,196 +60,224 @@ export default function Home() {
     <>
       <Nav />
 
-      <main className="relative flex-1">
-        <div className="aurora" />
-        <div className="grid-lines absolute inset-x-0 top-0 h-[600px]" />
-
+      <main className="flex-1">
         {/* Hero */}
-        <section className="relative mx-auto max-w-6xl px-6 pt-20 pb-24 sm:pt-28">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs text-muted">
+        <section className="relative overflow-hidden px-6 pb-28 pt-24 md:px-16 lg:px-24">
+          <div className="grid-lines pointer-events-none absolute inset-x-0 top-0 h-[560px]" />
+
+          <div className="relative mx-auto max-w-4xl text-center">
+            <span className="liquid-glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-body text-xs text-white/60">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               Live on Coston2 testnet
             </span>
 
-            <h1 className="mt-6 text-balance text-5xl font-semibold tracking-tight sm:text-6xl">
+            <h1 className="mt-7 font-heading text-6xl italic leading-[0.85] tracking-tight md:text-7xl lg:text-8xl">
               Programmable XRP.
               <br />
               <span className="text-accent">One payment away.</span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-xl text-balance text-lg leading-relaxed text-muted">
+            <p className="mx-auto mt-7 max-w-xl font-body text-base font-light leading-relaxed text-white/60 md:text-lg">
               XRPL can send a payment. It cannot say <em>later</em>, and it cannot say <em>if</em>.
-              Tempo lets one XRP payment register a standing order on Flare that executes on a
-              schedule or a price — with no FLR, no EVM wallet, and no bridge.
+              Tempo lets one XRP payment register a standing order on Flare — and the exit that
+              unwinds it.
             </p>
 
-            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/demo"
-                className="w-full rounded-full bg-accent px-7 py-3 text-sm font-medium text-black transition-opacity hover:opacity-90 sm:w-auto"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-7 py-3 font-body text-sm font-medium text-black transition-colors hover:bg-white/90 sm:w-auto"
               >
                 Try the demo
+                <ArrowUpRight className="h-4 w-4" />
               </Link>
               <a
-                href="https://github.com"
+                href="https://github.com/Zireaelst/Flare-Hackaton"
                 target="_blank"
                 rel="noreferrer"
-                className="w-full rounded-full border border-line bg-surface px-7 py-3 text-sm font-medium transition-colors hover:border-muted sm:w-auto"
+                className="liquid-glass-strong flex w-full items-center justify-center gap-2 rounded-full px-7 py-3 font-body text-sm font-medium text-white transition-all hover:bg-white/10 sm:w-auto"
               >
                 Read the code
+                <ArrowUpRight className="h-5 w-5" />
               </a>
             </div>
           </div>
         </section>
 
         {/* The gap */}
-        <section className="relative mx-auto max-w-6xl px-6 pb-24">
-          <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-2">
-            <div className="bg-surface p-8">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted">
-                What Smart Accounts solved
-              </h2>
-              <p className="mt-4 text-lg leading-relaxed">
-                One XRPL payment can already trigger arbitrary logic on Flare, with no FLR and no
-                EVM wallet. The <span className="text-foreground">authorization</span> gap is
-                closed.
-              </p>
+        <section className="px-6 pb-28 md:px-16 lg:px-24">
+          <div className="mx-auto max-w-5xl">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="liquid-glass rounded-3xl p-8">
+                <h2 className="font-body text-xs uppercase tracking-[0.2em] text-white/40">
+                  Flare solved getting in
+                </h2>
+                <p className="mt-4 font-body text-lg leading-relaxed text-white/80">
+                  Smart Accounts v1.3 moves XRP into a curated vault with one XRPL signature. Over
+                  40 million XRP has already gone that way.
+                </p>
+              </div>
+              <div className="liquid-glass rounded-3xl p-8">
+                <h2 className="font-body text-xs uppercase tracking-[0.2em] text-accent">
+                  Nobody solved getting out
+                </h2>
+                <p className="mt-4 font-body text-lg leading-relaxed text-white/80">
+                  Leaving means noticing the moment yourself, sending another payment, waiting out
+                  the vault&apos;s lag, then sending a third transaction to claim.
+                </p>
+              </div>
             </div>
-            <div className="bg-surface p-8">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-accent">
-                What was still missing
-              </h2>
-              <p className="mt-4 text-lg leading-relaxed">
-                That operation runs <span className="text-foreground">once</span>, immediately,
-                atomically with the mint. The <span className="text-foreground">time</span> gap
-                stayed open — no schedules, no conditions, no &ldquo;when the price hits&rdquo;.
-              </p>
-            </div>
-          </div>
 
-          <p className="mx-auto mt-10 max-w-2xl text-balance text-center text-lg leading-relaxed text-muted">
-            Tempo&apos;s idea is one line long:{" "}
-            <span className="text-foreground">
-              the user operation registers an order instead of performing an action.
-            </span>{" "}
-            That is how you get deferred execution from a primitive that has none.
-          </p>
+            <p className="mx-auto mt-12 max-w-2xl text-center font-heading text-2xl italic leading-snug text-white/90 md:text-3xl">
+              The user operation registers an order instead of performing an action. That is how
+              you get deferred execution from a primitive that has none.
+            </p>
+          </div>
         </section>
 
         {/* Order types */}
-        <section className="relative mx-auto max-w-6xl px-6 pb-24">
-          <h2 className="text-2xl font-semibold tracking-tight">Three orders, one payment each</h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {ORDER_TYPES.map((order) => (
-              <div key={order.name} className="rounded-2xl border border-line bg-surface p-6">
-                <h3 className="text-lg font-medium">{order.name}</h3>
-                <p className="mt-1 font-mono text-xs text-accent">{order.trigger}</p>
-                <p className="mt-4 text-sm leading-relaxed text-muted">{order.body}</p>
-              </div>
-            ))}
+        <section className="px-6 pb-28 md:px-16 lg:px-24">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="font-heading text-4xl italic tracking-tight md:text-5xl">
+              What one payment can set
+            </h2>
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {ORDERS.map((order) => (
+                <div key={order.name} className="liquid-glass rounded-3xl p-7">
+                  <h3 className="font-heading text-2xl italic">{order.name}</h3>
+                  <p className="mt-1.5 font-body text-xs text-accent">{order.trigger}</p>
+                  <p className="mt-4 font-body text-sm font-light leading-relaxed text-white/60">
+                    {order.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="liquid-glass mt-4 rounded-3xl p-7">
+              <p className="font-body text-sm leading-relaxed text-white/70">
+                <span className="text-accent">Your funds never leave your account.</span> An order
+                is backed by an allowance, not a deposit. Tempo holds no balance between
+                executions, and cancelling costs nothing.
+              </p>
+            </div>
           </div>
         </section>
 
         {/* How it works */}
-        <section className="relative mx-auto max-w-6xl px-6 pb-24">
-          <h2 className="text-2xl font-semibold tracking-tight">How it works</h2>
+        <section className="px-6 pb-28 md:px-16 lg:px-24">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="font-heading text-4xl italic tracking-tight md:text-5xl">How it works</h2>
+            <ol className="mt-10 space-y-3">
+              {[
+                {
+                  step: "You send one XRP payment",
+                  body: "Untagged, to the FAssets Core Vault, carrying a 42-byte memo that commits to your order.",
+                },
+                {
+                  step: "Flare proves it happened",
+                  body: "The relayer fetches an FDC XRPPayment attestation — a real proof, not a trusted bridge.",
+                },
+                {
+                  step: "Mint and orders, atomically",
+                  body: "FXRP is minted into your personal account, which approves Tempo and registers both the plan and its exit in the same transaction.",
+                },
+                {
+                  step: "Anyone can execute it",
+                  body: "Tempo re-derives the price and the clock on-chain. The keeper supplies nothing but an order id, so it can make an order late — never wrong.",
+                },
+              ].map((item, index) => (
+                <li key={item.step} className="liquid-glass flex gap-5 rounded-2xl p-6">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 font-body text-xs text-accent">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3 className="font-body font-medium">{item.step}</h3>
+                    <p className="mt-1.5 font-body text-sm font-light leading-relaxed text-white/55">
+                      {item.body}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
 
-          <ol className="mt-8 space-y-px overflow-hidden rounded-2xl border border-line bg-line">
-            {[
-              {
-                step: "You send one XRP payment",
-                body: "Untagged, to the FAssets Core Vault, carrying a 42-byte memo that commits to your order.",
-              },
-              {
-                step: "Flare proves it happened",
-                body: "The relayer fetches an FDC XRPPayment attestation — a real proof, not a trusted bridge.",
-              },
-              {
-                step: "Mint and order, atomically",
-                body: "FXRP is minted into your personal account, which approves Tempo and registers the order in the same transaction.",
-              },
-              {
-                step: "Anyone can execute it",
-                body: "When the trigger is met, any address may execute. Tempo re-checks the price and the clock on-chain, so the keeper is a convenience, never an authority.",
-              },
-            ].map((item, index) => (
-              <li key={item.step} className="flex gap-5 bg-surface p-6">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line font-mono text-xs text-accent">
-                  {index + 1}
-                </span>
-                <div>
-                  <h3 className="font-medium">{item.step}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-
-          <div className="mt-6 rounded-2xl border border-line bg-accent-soft p-6">
-            <p className="text-sm leading-relaxed">
-              <span className="font-medium text-accent">Your funds never leave your account.</span>{" "}
-              An order is backed by an allowance, not a deposit. Tempo holds no balance between
-              executions, and cancelling costs you nothing.
+        {/* Proven */}
+        <section className="px-6 pb-28 md:px-16 lg:px-24">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="font-heading text-4xl italic tracking-tight md:text-5xl">
+              Proven on chain, not in a slide
+            </h2>
+            <p className="mt-3 max-w-2xl font-body text-sm font-light text-white/50">
+              Every leg below was executed on Coston2 and the XRPL testnet. The only action not
+              exercised there is the stablecoin swap, because SparkDEX has no testnet deployment —
+              that one is proven against the real mainnet pool on a fork.
             </p>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              {PROVEN.map((item) => (
+                <div key={item.label} className="liquid-glass rounded-3xl p-7">
+                  <h3 className="font-body text-sm font-medium text-accent">{item.label}</h3>
+                  <p className="mt-2.5 font-body text-sm font-light leading-relaxed text-white/60">
+                    {item.body}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Stack */}
-        <section className="relative mx-auto max-w-6xl px-6 pb-24">
-          <h2 className="text-2xl font-semibold tracking-tight">Built on four Flare protocols</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {STACK.map((item) => (
-              <div key={item.name} className="rounded-2xl border border-line bg-surface p-6">
-                <h3 className="font-medium">{item.name}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{item.role}</p>
-              </div>
-            ))}
+        <section className="px-6 pb-28 md:px-16 lg:px-24">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="font-heading text-4xl italic tracking-tight md:text-5xl">
+              Four Flare protocols, none decorative
+            </h2>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              {STACK.map((item) => (
+                <div key={item.name} className="liquid-glass rounded-3xl p-7">
+                  <h3 className="font-body font-medium">{item.name}</h3>
+                  <p className="mt-2 font-body text-sm font-light leading-relaxed text-white/55">
+                    {item.role}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Contracts */}
-        <section className="relative mx-auto max-w-6xl px-6 pb-24">
-          <h2 className="text-2xl font-semibold tracking-tight">Deployed on Coston2</h2>
-          <p className="mt-2 text-sm text-muted">chainId 114 · everything below is live and verifiable</p>
-
-          <div className="mt-8 overflow-hidden rounded-2xl border border-line">
-            {CONTRACTS.map((contract, index) => (
-              <a
-                key={contract.name}
-                href={`https://coston2-explorer.flare.network/address/${contract.address}`}
-                target="_blank"
-                rel="noreferrer"
-                className={`flex flex-col justify-between gap-1 bg-surface p-5 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center ${
-                  index > 0 ? "border-t border-line" : ""
-                }`}
-              >
-                <span className="font-medium">{contract.name}</span>
-                <span className="break-all font-mono text-xs text-muted">{contract.address}</span>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="relative mx-auto max-w-6xl px-6 pb-28">
-          <div className="rounded-3xl border border-line bg-surface p-12 text-center">
-            <h2 className="text-3xl font-semibold tracking-tight">See it run on testnet</h2>
-            <p className="mx-auto mt-3 max-w-lg text-balance text-muted">
-              Compose an order, watch one XRP payment turn into an FDC proof, an FXRP mint, and a
-              live standing order — end to end, on chain.
+        <section className="px-6 pb-28 md:px-16 lg:px-24">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="font-heading text-4xl italic tracking-tight md:text-5xl">
+              Deployed on Coston2
+            </h2>
+            <p className="mt-3 font-body text-sm font-light text-white/50">
+              chainId 114 &middot; every address below is live and verifiable
             </p>
-            <Link
-              href="/demo"
-              className="mt-8 inline-block rounded-full bg-accent px-8 py-3 text-sm font-medium text-black transition-opacity hover:opacity-90"
-            >
-              Try the demo
-            </Link>
+
+            <div className="liquid-glass mt-10 overflow-hidden rounded-3xl">
+              {CONTRACTS.map((contract, index) => (
+                <a
+                  key={contract.name}
+                  href={`https://coston2-explorer.flare.network/address/${contract.address}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`flex flex-col justify-between gap-1 p-5 transition-colors hover:bg-white/5 sm:flex-row sm:items-center ${
+                    index > 0 ? "border-t border-white/8" : ""
+                  }`}
+                >
+                  <span className="font-body text-sm font-medium">{contract.name}</span>
+                  <span className="break-all font-mono text-xs text-white/40">
+                    {contract.address}
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         </section>
       </main>
 
-      <Footer />
+      <CtaFooter />
     </>
   );
 }
