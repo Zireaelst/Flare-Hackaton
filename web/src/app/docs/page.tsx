@@ -328,7 +328,8 @@ export default function DocsPage() {
               [<Code key="c">POST /api/relay</Code>, "Advances one relay by one step; the caller holds the job"],
               [<Code key="d">POST /api/keeper</Code>, "Executes due orders and claims released withdrawals"],
               [<Code key="e">GET /api/state</Code>, "Orders, price, balances, pending withdrawals"],
-              [<Code key="f">GET /api/price</Code>, "The XRP/USD reading alone — what the chart polls"],
+              [<Code key="f">GET /api/price</Code>, "The FTSO XRP/USD reading alone, polled every 2.5s"],
+              [<Code key="g">GET /api/history</Code>, "Market price history for the chart, proxied and cached from CoinGecko"],
             ]}
           />
           <Note>
@@ -339,6 +340,20 @@ export default function DocsPage() {
           </Note>
 
           {/* ---------------------------------------------------------------- */}
+          <H3>What the chart shows</H3>
+          <P>
+            The headline price is <strong>FTSO</strong>, because that is the only feed the contract
+            triggers on. The 15-minute range plots our own oracle series, sampled every 2.5 seconds
+            — higher resolution than any free market API offers at that scale, and the oracle price
+            rather than a market average.
+          </P>
+          <P>
+            Longer ranges plot market history from CoinGecko, with the live FTSO reading drawn over
+            it as a dashed line. That pairing is deliberate: if the oracle and the market ever
+            diverge, the chart shows it instead of quietly picking one. Charting only the market
+            would let a target appear to be crossed while the contract disagreed.
+          </P>
+
           <H2 id="contracts">Contracts</H2>
           <P>Coston2, chainId 114.</P>
           <Table
