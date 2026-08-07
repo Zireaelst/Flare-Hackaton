@@ -383,7 +383,7 @@ The relayer is a stateless worker, driven by cron, with its job state in Supabas
 | `DirectMintingDelayed` emitted | Wait until `executionAllowedAt`, re-submit. **Never** treat as hard failure or prompt a resend — a resend is what causes duplicate-nonce strandings |
 | Mint reverted, `isTransactionIdUsed == false` | Drive `0xE0`: submit a skip-memo payment targeting the stuck tx id (with a positive net mint amount, since fee-only mints revert), then re-submit the original so FXRP is recovered without running the abandoned operation |
 | Nonce stranded on an abandoned op, stuck tx already minted | Drive `0xE1` fast-forward. Validate client-side that `newNonce > getNonce` and the jump is `<= type(uint32).max` |
-| Executor fee too low on a stuck payment | Drive `0xE2` replacement |
+| Executor fee too low on a stuck payment | ~~Drive `0xE2` replacement~~ — **not implemented**, see §0 |
 | Two user payments racing on one nonce | **Prevented, not recovered:** the relayer serializes per PersonalAccount and re-reads `getNonce` per payment |
 
 The UI renders this as a plain timeline: *"Your payment is waiting on the network → recovering
@@ -440,6 +440,9 @@ Today is 3 August. Deadline 14 August.
 **Day 0 is the gate.** If the Smart Accounts stack is not live and reachable on Coston2, we
 learn it today, not on day 5. Designated sacrifices, in order: STOP_LOSS (keep TAKE_PROFIT),
 `0xE2` recovery, frontend polish.
+
+> In the event none of these were needed for time. `0xE2` was dropped for a different reason —
+> its byte layout is unverifiable — and STOP_LOSS shipped.
 
 ---
 
